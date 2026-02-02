@@ -1,4 +1,4 @@
-PropEquity-Frontend
+# PropEquity-Frontend
 Interfaz web interactiva diseñada para la gestión de ventas en casetas inmobiliarias, permitiendo la simulación de créditos bajo el programa Nuevo Crédito Mivivienda y el bono Techo Propio.
 
 Funcionalidades Clave:
