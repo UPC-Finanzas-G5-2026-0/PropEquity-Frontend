@@ -4,7 +4,6 @@ import { register } from '../services/authService';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
-// 1. IMPORTAMOS EL LOGO (Asegúrate que el nombre del archivo coincida)
 import logoPropEquity from '../assets/logo.jpeg';
 
 const RegisterPage = () => {
