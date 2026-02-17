@@ -47,7 +47,7 @@ const RegisterPage = () => {
         <img
           src={logoPropEquity}
           alt="Logo PropEquity"
-          className="w-48 mb-8 object-contain" // Ajusta w-48 al tamaño que prefieras
+          className="w-48 mb-8 object-contain rounded-2xl" // Ajusta w-48 al tamaño que prefieras
         />
 
         <h2 className="text-3xl font-bold tracking-widest uppercase">PropEquity</h2>
