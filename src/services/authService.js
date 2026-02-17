@@ -21,7 +21,15 @@ export const login = async (email, password) => {
 };
 
 export const register = async (userData) => {
-  const response = await api.post('/auth/signup', userData);
+  // Mapeamos los campos del frontend a los que espera el backend
+  const backendUserData = {
+    email: userData.email,
+    password: userData.password,
+    nombre: userData.first_name,
+    apellido: userData.last_name,
+    rol: userData.role
+  };
+  const response = await api.post('/auth/signup', backendUserData);
   return response.data;
 };
 
