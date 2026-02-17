@@ -1,35 +1,18 @@
-// src/services/authService.js
-import axios from 'axios';
-
-// Asegúrate que este puerto sea el mismo donde corre tu FastAPI (8000 usualmente)
-const API_URL = 'http://127.0.0.1:8000';
-
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Interceptor para agregar el token automáticamente a cada petición
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+import api from './api'; // Importamos la instancia configurada en el archivo de arriba
 
 export const login = async (email, password) => {
-  // FastAPI OAuth2 espera x-www-form-urlencoded
-  const formData = new FormData();
-  formData.append('username', email);
-  formData.append('password', password);
+  // 1. Crear los datos como formulario web estándar (URLSearchParams)
+  // Esto es OBLIGATORIO para que FastAPI OAuth2 lo acepte
+  const params = new URLSearchParams();
+  params.append('username', email);
+  params.append('password', password);
 
-  const response = await api.post('/auth/login', formData);
+  // 2. Enviar con la cabecera explícita
+  const response = await api.post('/auth/login', params, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
+  });
 
   if (response.data.access_token) {
     localStorage.setItem('token', response.data.access_token);
@@ -45,5 +28,3 @@ export const register = async (userData) => {
 export const logout = () => {
   localStorage.removeItem('token');
 };
-
-export default api;

@@ -4,16 +4,21 @@ import { register } from '../services/authService';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 
+// 1. IMPORTAMOS EL LOGO (Asegúrate que el nombre del archivo coincida)
+import logoPropEquity from '../assets/logo.jpeg';
+
 const RegisterPage = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+
   const [formData, setFormData] = useState({
     first_name: '',
-    last_name: '', // Agregaremos un campo oculto o combinaremos nombre por ahora
+    last_name: '',
     email: '',
     password: '',
-    role: 'asesor' // Valor por defecto
+    role: 'asesor'
   });
+
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
@@ -24,19 +29,11 @@ const RegisterPage = () => {
     e.preventDefault();
     setError('');
     try {
-      // Separamos el nombre para cumplir con el backend (first_name, last_name)
-      // Asumiremos que el usuario ingresa "Nombre Apellido" en el campo nombre
-      const nameParts = formData.first_name.split(' ');
-      const payload = {
-        ...formData,
-        first_name: nameParts[0],
-        last_name: nameParts.slice(1).join(' ') || 'Pendiente'
-      };
-
-      await register(payload);
+      await register(formData);
       alert("Cuenta creada con éxito. Ahora inicia sesión.");
       navigate('/login');
     } catch (err) {
+      console.error(err);
       setError('Error al registrar. Verifica los datos.');
     }
   };
@@ -46,10 +43,14 @@ const RegisterPage = () => {
       {/* Panel Izquierdo (Branding) */}
       <div className="hidden w-1/2 bg-brand-dark lg:flex flex-col justify-center items-center text-white p-12">
         <h1 className="text-4xl font-bold mb-8">Bienvenido(a) a</h1>
-        {/* Placeholder para Logo */}
-        <div className="bg-white text-brand-dark p-6 rounded-full w-32 h-32 flex items-center justify-center mb-6 font-bold text-3xl">
-          $$$
-        </div>
+
+        {/* --- 2. AQUÍ CAMBIAMOS EL PLACEHOLDER POR LA IMAGEN --- */}
+        <img
+          src={logoPropEquity}
+          alt="Logo PropEquity"
+          className="w-48 mb-8 object-contain" // Ajusta w-48 al tamaño que prefieras
+        />
+
         <h2 className="text-3xl font-bold tracking-widest uppercase">PropEquity</h2>
         <p className="mt-8 text-center text-gray-300 text-sm max-w-md">
           Bienvenido a PropEquity, la plataforma definitiva para la gestión y simulación de créditos hipotecarios bajo el esquema Nuevo Crédito Mivivienda y Techo Propio.
@@ -64,17 +65,32 @@ const RegisterPage = () => {
           {error && <div className="mb-4 text-red-500 text-center text-sm">{error}</div>}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Nombre */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nombre</label>
-              <input
-                name="first_name"
-                type="text"
-                placeholder="Ingrese su Nombre Completo"
-                className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
-                onChange={handleChange}
-                required
-              />
+
+            {/* Campos Nombres y Apellidos */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Nombres</label>
+                <input
+                  name="first_name"
+                  type="text"
+                  placeholder="Ej. Juan"
+                  className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Apellidos</label>
+                <input
+                  name="last_name"
+                  type="text"
+                  placeholder="Ej. Pérez"
+                  className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
+                  onChange={handleChange}
+                  required
+                />
+              </div>
             </div>
 
             {/* Email */}
@@ -110,7 +126,7 @@ const RegisterPage = () => {
               </button>
             </div>
 
-            {/* Roles (Radio Buttons) */}
+            {/* Roles */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Indique su rol</label>
               <div className="flex space-x-6">
@@ -129,7 +145,6 @@ const RegisterPage = () => {
               </div>
             </div>
 
-            {/* Botón */}
             <button
               type="submit"
               className="w-full bg-brand-orange text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition duration-200 shadow-lg"
