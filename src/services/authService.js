@@ -8,7 +8,7 @@ export const login = async (email, password) => {
   params.append('password', password);
 
   // 2. Enviar con la cabecera explícita
-  const response = await api.post('/auth/login', params, {
+  const response = await api.post('/auth/auth/login', params, {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
@@ -29,7 +29,7 @@ export const register = async (userData) => {
     apellido: userData.last_name,
     rol: userData.role
   };
-  const response = await api.post('/auth/signup', backendUserData);
+  const response = await api.post('/auth/auth/signup', backendUserData);
   return response.data;
 };
 
