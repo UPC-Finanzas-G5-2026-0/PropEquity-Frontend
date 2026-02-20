@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import { jwtDecode } from 'jwt-decode'; // 1. Importamos el decodificador
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -16,23 +17,38 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
     try {
+      // Obtenemos la respuesta pura de FastAPI (que solo tiene el access_token)
       const response = await login(email, password);
 
-      // Redirección dinámica basada en el rol (Cadenas exactas del backend)
-      switch (response.role) {
+      // 2. Decodificamos el token para sacar los datos del usuario
+      const decodedToken = jwtDecode(response.access_token);
+      console.log("ESTO TRAE EL TOKEN:", decodedToken);
+
+      // Dependiendo de cómo armaste tu payload en Python, puede llamarse "role" o "rol"
+      // Asegúrate de usar el nombre correcto. Usaremos "role" como ejemplo:
+      const userRole = decodedToken.role || decodedToken.rol;
+
+      // 3. Redirección dinámica basada en el rol decodificado
+      // IMPORTANTE: Asegúrate de que las mayúsculas coincidan con tu base de datos
+      switch (userRole) {
         case 'Administrador':
-          navigate('/dashboard'); // O una ruta específica de admin si existe
+        case 'administrador':
+          navigate('/dashboard');
           break;
         case 'Asesor':
+        case 'asesor':
           navigate('/dashboard');
           break;
         case 'Cliente':
+        case 'cliente':
           navigate('/cliente/dashboard');
           break;
         default:
+          console.warn("Rol no reconocido:", userRole);
           navigate('/');
       }
     } catch (err) {
+      console.error(err);
       setError('Credenciales incorrectas.');
     }
   };
