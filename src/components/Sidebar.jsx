@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.jpeg';
 
 const Sidebar = () => {
     const { logout, user } = useAuth();
@@ -26,8 +27,15 @@ const Sidebar = () => {
 
     return (
         <aside className="w-64 bg-brand-dark h-screen sticky top-0 flex flex-col p-6 text-white shrink-0 overflow-y-auto">
-            <div className="text-3xl font-bold mb-12 mt-4 px-4 tracking-wide">
-                PropEquity
+            <div className="mb-10 mt-4 px-4 flex flex-col items-center text-center gap-4">
+                <img
+                    src={logo}
+                    alt="PropEquity Logo"
+                    className="w-20 h-20 rounded-2xl object-cover shadow-sm border border-white/10"
+                />
+                <div className="text-2xl font-bold tracking-wide">
+                    PropEquity
+                </div>
             </div>
 
             <nav className="flex-1">

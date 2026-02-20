@@ -14,7 +14,7 @@ export const login = async (email, password) => {
   params.append('password', password);
 
   // 2. Enviar con la cabecera explícita
-  const response = await api.post('/auth/login', params, {
+  const response = await api.post('/auth/auth/login', params, {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
@@ -24,22 +24,7 @@ export const login = async (email, password) => {
 };
 
 export const register = async (userData) => {
-  const backendUserData = {
-    email: userData.email,
-    nombres: userData.first_name,
-    apellidos: userData.last_name,
-    password: userData.password,
-    rol_usuario: roleMapping[userData.role] || 'Cliente',
-    dni: userData.dni,
-    telefono: userData.telefono || null,
-  };
-
-  // Solo agregar ingreso_mensual si es Cliente
-  if (userData.role === 'cliente') {
-    backendUserData.ingreso_mensual = parseFloat(userData.ingreso_mensual);
-  }
-
-  const response = await api.post('/auth/signup', backendUserData);
+  const response = await api.post('/auth/signup', userData);
   return response.data;
 };
 
