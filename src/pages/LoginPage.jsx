@@ -16,8 +16,22 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      const response = await login(email, password);
+
+      // Redirección dinámica basada en el rol (Cadenas exactas del backend)
+      switch (response.role) {
+        case 'Administrador':
+          navigate('/dashboard'); // O una ruta específica de admin si existe
+          break;
+        case 'Asesor':
+          navigate('/dashboard');
+          break;
+        case 'Cliente':
+          navigate('/cliente/dashboard');
+          break;
+        default:
+          navigate('/');
+      }
     } catch (err) {
       setError('Credenciales incorrectas.');
     }

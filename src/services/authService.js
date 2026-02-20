@@ -1,5 +1,11 @@
 import api from './api'; // Importamos la instancia configurada en el archivo de arriba
 
+const roleMapping = {
+  'administrador': 'Administrador',
+  'asesor': 'Asesor',
+  'cliente': 'Cliente'
+};
+
 export const login = async (email, password) => {
   // 1. Crear los datos como formulario web estándar (URLSearchParams)
   // Esto es OBLIGATORIO para que FastAPI OAuth2 lo acepte
@@ -14,14 +20,11 @@ export const login = async (email, password) => {
     }
   });
 
-  if (response.data.access_token) {
-    localStorage.setItem('token', response.data.access_token);
-  }
   return response.data;
 };
 
 export const register = async (userData) => {
-  const response = await api.post('/auth/auth/signup', userData);
+  const response = await api.post('/auth/signup', userData);
   return response.data;
 };
 
