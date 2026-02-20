@@ -1,28 +1,51 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.jpeg';
 
 const Sidebar = () => {
-    const menuItems = [
-        { name: 'Inicio', path: '/dashboard' },
-        { name: 'Clientes', path: '/clientes' },
-        { name: 'Propiedades', path: '/propiedades' },
-        { name: 'Simulador', path: '/simulador' },
+    const { logout, user } = useAuth();
+    const navigate = useNavigate();
+
+    // Roles: Administrador, Asesor, Cliente
+    const allMenuItems = [
+        { name: 'Inicio', path: user?.role === 'Cliente' ? '/cliente/dashboard' : '/dashboard', roles: ['Administrador', 'Asesor', 'Cliente'] },
+        { name: 'Propiedades', path: '/propiedades', roles: ['Administrador', 'Asesor', 'Cliente'] },
+        { name: 'Simulaciones', path: '/simulador', roles: ['Administrador', 'Cliente'] },
+        // Nota: 'Clientes' (lista de usuarios) solo para admins/asesores
+        { name: 'Clientes', path: '/clientes', roles: ['Administrador', 'Asesor'] },
+        { name: 'Mi Perfil', path: '/perfil', roles: ['Cliente'] },
+        { name: 'Configuración', path: '/configuracion', roles: ['Administrador', 'Asesor', 'Cliente'] },
     ];
 
+    const menuItems = allMenuItems.filter(item => item.roles.includes(user?.role));
+
+    const handleLogout = () => {
+        logout();
+        navigate('/login');
+    };
+
     return (
-        <div className="w-64 bg-brand-dark min-h-screen flex flex-col p-6 text-white">
-            <div className="text-3xl font-bold mb-12 mt-4 px-4 tracking-wide">
-                PropEquity
+        <aside className="w-64 bg-brand-dark h-screen sticky top-0 flex flex-col p-6 text-white shrink-0 overflow-y-auto">
+            <div className="mb-10 mt-4 px-4 flex flex-col items-center text-center gap-4">
+                <img
+                    src={logo}
+                    alt="PropEquity Logo"
+                    className="w-20 h-20 rounded-2xl object-cover shadow-sm border border-white/10"
+                />
+                <div className="text-2xl font-bold tracking-wide">
+                    PropEquity
+                </div>
             </div>
 
             <nav className="flex-1">
-                <ul className="space-y-4">
+                <ul className="space-y-2">
                     {menuItems.map((item) => (
                         <li key={item.name}>
                             <NavLink
                                 to={item.path}
                                 className={({ isActive }) =>
-                                    `block py-3 px-4 rounded-lg text-lg transition-colors font-medium ${isActive
+                                    `block py-2.5 px-4 rounded-lg text-lg transition-colors font-medium ${isActive
                                         ? 'bg-white/10 text-white'
                                         : 'text-gray-400 hover:text-white hover:bg-white/5'
                                     }`
@@ -34,7 +57,16 @@ const Sidebar = () => {
                     ))}
                 </ul>
             </nav>
-        </div>
+
+            <div className="mt-auto pt-6 border-t border-white/10">
+                <button
+                    onClick={handleLogout}
+                    className="w-full text-left py-3 px-4 rounded-lg text-lg text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors font-medium"
+                >
+                    Cerrar Sesión
+                </button>
+            </div>
+        </aside>
     );
 };
 
