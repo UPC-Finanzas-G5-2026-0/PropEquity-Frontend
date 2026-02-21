@@ -132,6 +132,8 @@ const PropertyRegistrationPage = () => {
                 precio_venta: parseFloat(formData.precio),
                 codigo_moneda: parseInt(formData.moneda),
                 codigo_estado: parseInt(formData.estado),
+                tipo_unidad: formData.tipo_unidad || 'Departamento', 
+                grado_sostenible: parseInt(formData.grado_sostenible) || 1, 
                 codigo_cliente: user?.id ? parseInt(user.id) : null,
                 codigo_prospecto: null,
                 codigo_asesor: null,
@@ -357,6 +359,39 @@ const PropertyRegistrationPage = () => {
                                             ))}
                                         </div>
                                     )}
+                                </div>
+                            </div>
+
+                            {/* Sección de detalles adicionales */}
+                            <div className="grid grid-cols-2 gap-6">
+                                {/* Tipo de Unidad */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Tipo de Unidad</label>
+                                    <select 
+                                    name="tipo_unidad" 
+                                    value={formData.tipo_unidad || 'Departamento'} 
+                                    onChange={handleChange}
+                                    className="w-full bg-gray-50 border-none rounded-xl py-3.5 px-4 font-bold text-gray-700 text-sm outline-none focus:ring-2 focus:ring-brand-blue"
+                                    >
+                                        <option value="Departamento">Departamento</option>
+                                        <option value="Casa">Casa</option>
+                                        <option value="Cochera">Cochera</option>
+                                    </select>
+                                </div>
+
+                                {/* Grado Sostenible (Bono Verde) */}
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Bono Verde (Grado)</label>
+                                    <select 
+                                    name="grado_sostenible"  
+                                    value={formData.grado_sostenible || '1'} 
+                                    onChange={handleChange}
+                                    className="w-full bg-gray-50 border-none rounded-xl py-3.5 px-4 font-bold text-gray-700 text-sm outline-none focus:ring-2 focus:ring-brand-blue"
+                                    >
+                                        <option value="1">Grado 1 (Sostenible)</option>
+                                        <option value="2">Grado 2 (Sostenible +)</option>
+                                        <option value="3">Grado 3 (Eco-materiales)</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
