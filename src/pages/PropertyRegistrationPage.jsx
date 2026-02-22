@@ -1,13 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Sidebar from '../components/Sidebar';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import { Tooltip } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { createUnit, getUnits, updateUnit, deleteUnit } from '../services/unitService';
 import CustomSelect from '../components/CustomSelect';
+
+// Todos los distritos de Lima Metropolitana
+const DISTRITOS_LIMA = [
+    'Ate', 'Barranco', 'Breña', 'Carabayllo', 'Cercado de Lima', 'Chaclacayo', 'Chorrillos',
+    'Cieneguilla', 'Comas', 'El Agustino', 'Independencia', 'Jesús María', 'La Molina',
+    'La Victoria', 'Lince', 'Los Olivos', 'Lurigancho', 'Lurín', 'Magdalena del Mar',
+    'Miraflores', 'Pachacamac', 'Pucusana', 'Pueblo Libre', 'Puente Piedra', 'Punta Hermosa',
+    'Punta Negra', 'Rímac', 'San Bartolo', 'San Borja', 'San Isidro', 'San Juan de Lurigancho',
+    'San Juan de Miraflores', 'San Luis', 'San Martín de Porres', 'San Miguel', 'Santa Anita',
+    'Santa María del Mar', 'Santa Rosa', 'Santiago de Surco', 'Surquillo', 'Villa El Salvador',
+    'Villa María del Triunfo', 'Callao', 'Bellavista', 'La Perla', 'La Punta', 'Ventanilla'
+];
 
 const PropertyRegistrationPage = () => {
     const { user } = useAuth();
@@ -21,8 +34,9 @@ const PropertyRegistrationPage = () => {
         modalidad_vivienda: 'Compra',
         tipo_venta: 'Primera venta',
         es_sostenible: false,
-        ahorro_energia: false,
-        ahorro_agua: false,
+        certificacion_sostenible: '',
+        ahorro_energia: '',
+        ahorro_agua: '',
         materiales_eco: false,
         foto: null
     });
@@ -38,8 +52,10 @@ const PropertyRegistrationPage = () => {
 
     const fetchProperties = async () => {
         try {
-            const data = await getUnits();
-            setProperties(data);
+            const response = await getUnits();
+            if (response.success) {
+                setProperties(response.data);
+            }
         } catch (error) {
             console.error("Error cargando propiedades:", error);
         }
@@ -73,8 +89,9 @@ const PropertyRegistrationPage = () => {
             : prop.codigo_modalidad === 3 ? 'Mejoramiento' : 'Compra',
         tipo_venta: prop.codigo_tipo_venta === 2 ? 'Segunda venta' : 'Primera venta',
         es_sostenible: prop.es_sostenible || false,
-        ahorro_energia: prop.es_sostenible || false,
-        ahorro_agua: prop.es_sostenible || false,
+        certificacion_sostenible: prop.certificacion_sostenible || '',
+        ahorro_energia: prop.ahorro_energia ? String(prop.ahorro_energia) : '',
+        ahorro_agua: prop.ahorro_agua ? String(prop.ahorro_agua) : '',
         materiales_eco: prop.es_sostenible || false,
         foto: prop.foto
     });
@@ -96,7 +113,7 @@ const PropertyRegistrationPage = () => {
         setFormData({
             direccion: '', distrito: '', precio: '', moneda: 'PEN', area: '', estado_registro: 'Activo',
             modalidad_vivienda: 'Compra', tipo_venta: 'Primera venta', es_sostenible: false,
-            ahorro_energia: false, ahorro_agua: false, materiales_eco: false, foto: null
+            certificacion_sostenible: '', ahorro_energia: '', ahorro_agua: '', materiales_eco: false, foto: null
         });
         setPreview(null);
     };
@@ -104,8 +121,12 @@ const PropertyRegistrationPage = () => {
     const handleDelete = async (id) => {
         if (window.confirm("¿Estás seguro de que deseas eliminar esta propiedad?")) {
             try {
-                await deleteUnit(id);
-                fetchProperties();
+                const response = await deleteUnit(id);
+                if (response.success) {
+                    fetchProperties();
+                } else {
+                    alert(response.error);
+                }
             } catch (error) {
                 console.error("Error eliminando propiedad:", error);
             }
@@ -126,6 +147,12 @@ const PropertyRegistrationPage = () => {
             return;
         }
 
+        // Validación de certificación sostenible requerida
+        if (formData.es_sostenible === true && !formData.certificacion_sostenible) {
+            alert("Las viviendas sostenibles requieren especificar una certificación (EDGE, LEED, etc.).");
+            return;
+        }
+
         // Validación de Foto (Máx 5MB y extensiones permitidas)
         if (formData.foto instanceof File) {
             const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -139,12 +166,19 @@ const PropertyRegistrationPage = () => {
             }
         }
 
-        // Restricción de rango MiVivienda (solo para PEN)
-        if (formData.moneda === 'PEN') {
-            if (precioVal < 68800 || precioVal > 488800) {
-                if (!window.confirm(`El precio (S/ ${precioVal.toLocaleString()}) está fuera del rango del programa (S/ 68,800 - S/ 488,800). ¿Deseas continuar?`)) {
-                    return;
-                }
+        // Restricción de rango MiVivienda (PEN y USD)
+        const TC = 3.75; // Tipo de cambio referencial
+        let precioEnSoles = precioVal;
+        if (formData.moneda === 'USD') {
+            precioEnSoles = precioVal * TC;
+        }
+        
+        if (precioEnSoles < 68800 || precioEnSoles > 488800) {
+            const rangoMsg = formData.moneda === 'USD' 
+                ? `$ ${(68800/TC).toLocaleString(undefined, {maximumFractionDigits: 0})} - $ ${(488800/TC).toLocaleString(undefined, {maximumFractionDigits: 0})}`
+                : 'S/ 68,800 - S/ 488,800';
+            if (!window.confirm(`El precio está fuera del rango del programa MiVivienda (${rangoMsg}). ¿Deseas continuar?`)) {
+                return;
             }
         }
 
@@ -167,17 +201,28 @@ const PropertyRegistrationPage = () => {
                     ? (TIPO_VENTA_MAP[formData.tipo_venta] ?? 1)
                     : null,
                 es_sostenible: formData.es_sostenible,
+                certificacion_sostenible: formData.es_sostenible ? formData.certificacion_sostenible : null,
+                ahorro_energia: formData.ahorro_energia ? parseFloat(formData.ahorro_energia) : null,
+                ahorro_agua: formData.ahorro_agua ? parseFloat(formData.ahorro_agua) : null,
                 codigo_estado: ESTADO_MAP[formData.estado_registro] ?? 1,
                 foto: formData.foto,
                 remove_foto: fotoRemoved ? true : false,
             };
 
-            if (editingId) await updateUnit(editingId, unitPayload);
-            else await createUnit(unitPayload);
+            let response;
+            if (editingId) {
+                response = await updateUnit(editingId, unitPayload);
+            } else {
+                response = await createUnit(unitPayload);
+            }
 
-            handleCancelEdit();
-            fetchProperties();
-            alert("Propiedad procesada con éxito.");
+            if (response.success) {
+                handleCancelEdit();
+                fetchProperties();
+                alert("Propiedad procesada con éxito.");
+            } else {
+                alert(`Error: ${response.error}`);
+            }
         } catch (error) {
             console.error("Error al procesar propiedad:", error);
             const msg = error.response?.data?.detail || "No pudimos guardar la propiedad. Verifica los datos e intenta de nuevo.";
@@ -230,7 +275,7 @@ const PropertyRegistrationPage = () => {
                                 value={formData.distrito}
                                 onChange={(val) => handleCustomChange('distrito', val)}
                                 showInfo={false}
-                                options={['Miraflores', 'San Isidro', 'Santiago de Surco', 'La Molina', 'San Borja', 'Magdalena', 'Barranco'].map(d => ({ id: d, label: d }))}
+                                options={DISTRITOS_LIMA.map(d => ({ id: d, label: d }))}
                             />
                             <CustomSelect
                                 label="Estado"
@@ -245,8 +290,8 @@ const PropertyRegistrationPage = () => {
 
                             {/* DIVISA + PRECIO */}
                             <div>
-                                <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Precio</label>
-                                <div className="flex items-center bg-gray-50 border border-gray-100 rounded-xl h-9 overflow-hidden">
+                                <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Precio de Venta</label>
+                                <div className="flex items-center bg-gray-50 border border-gray-100 rounded-xl h-10 overflow-hidden">
                                     <div className="flex shrink-0 border-r border-gray-200 h-full">
                                         {[{ id: 'PEN', symbol: 'S/' }, { id: 'USD', symbol: '$' }].map(cur => (
                                             <button
@@ -265,29 +310,46 @@ const PropertyRegistrationPage = () => {
                                     </div>
                                     <input
                                         name="precio" value={formData.precio} onChange={handleChange}
-                                        type="number" placeholder=""
+                                        type="number" placeholder="Ej: 180000"
                                         min="0.01" step="0.01"
                                         className="flex-1 bg-transparent h-full px-3 outline-none font-bold text-gray-700 text-sm"
                                     />
                                 </div>
-                                <p className="text-[8px] font-semibold text-gray-300 mt-1 ml-1">
-                                    {formData.moneda === 'PEN'
-                                        ? 'Rango MiVivienda: S/ 68,800 – S/ 488,800'
-                                        : 'Rango MiVivienda: $ 18,500 – $ 131,000 (aprox.)'
-                                    }
+                                {/* Rango MiVivienda */}
+                                <p className="text-[7px] font-medium text-gray-400 mt-1 ml-1">
+                                    Rango MiVivienda: S/ 68,800 - S/ 488,800 {formData.moneda === 'USD' && '(USD 18,347 - USD 130,347 aprox.)'}
                                 </p>
-                                {formData.precio !== '' && formData.moneda === 'PEN' &&
-                                    (parseFloat(formData.precio) < 68800 || parseFloat(formData.precio) > 488800) && (
-                                        <p className="text-[8px] font-semibold text-amber-400 ml-1">
-                                            ⚠ Fuera del rango del programa MiVivienda
+                                {formData.precio !== '' && (() => {
+                                    const TC = 3.75;
+                                    const precioVal = parseFloat(formData.precio);
+                                    const precioSoles = formData.moneda === 'USD' ? precioVal * TC : precioVal;
+                                    
+                                    if (precioSoles < 68800) {
+                                        return <p className="text-[7px] font-semibold text-red-500 ml-1">⚠ Precio menor al mínimo (S/ 68,800)</p>;
+                                    }
+                                    if (precioSoles > 488800) {
+                                        return <p className="text-[7px] font-semibold text-red-500 ml-1">⚠ Precio mayor al máximo (S/ 488,800)</p>;
+                                    }
+                                    
+                                    let rango = '';
+                                    if (precioSoles <= 97800) rango = 'R1';
+                                    else if (precioSoles <= 146900) rango = 'R2';
+                                    else if (precioSoles <= 244600) rango = 'R3';
+                                    else if (precioSoles <= 362100) rango = 'R4';
+                                    else rango = 'R5';
+                                    
+                                    return (
+                                        <p className="text-[7px] font-semibold text-green-600 ml-1">
+                                            ✓ Rango {rango} {formData.moneda === 'USD' && `(≈ S/ ${precioSoles.toLocaleString(undefined, {maximumFractionDigits: 0})})`}
                                         </p>
-                                    )}
+                                    );
+                                })()}
                             </div>
 
                             {/* ÁREA */}
                             <div>
                                 <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Área (m²)</label>
-                                <div className={`bg-gray-50 border rounded-xl h-9 flex items-center transition-all ${formData.area !== '' && parseFloat(formData.area) <= 0
+                                <div className={`bg-gray-50 border rounded-xl h-10 flex items-center transition-all ${formData.area !== '' && parseFloat(formData.area) <= 0
                                     ? 'border-red-300 bg-red-50'
                                     : 'border-gray-100'
                                     }`}>
@@ -299,20 +361,20 @@ const PropertyRegistrationPage = () => {
                                                 handleChange(e);
                                             }
                                         }}
-                                        type="number" placeholder=""
+                                        type="number" placeholder="Ej: 85.5"
                                         min="0.01" step="0.01"
                                         className="w-full bg-transparent h-full px-4 outline-none font-bold text-gray-700 text-sm"
                                     />
                                     <span className="pr-3 text-[10px] font-black text-gray-300">m²</span>
                                 </div>
                                 {formData.area !== '' && parseFloat(formData.area) <= 0 && (
-                                    <p className="text-[9px] text-red-400 font-semibold mt-1 ml-1">El área debe ser mayor a 0</p>
+                                    <p className="text-[7px] text-red-400 font-semibold mt-1 ml-1">El área debe ser mayor a 0</p>
                                 )}
                             </div>
 
                             {/* SOSTENIBLE */}
                             <div className="col-span-2">
-                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1 flex items-center gap-1.5">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1 flex items-center gap-1.5">
                                     Tipo de Vivienda
                                     <Tooltip
                                         title="Define si la vivienda aplica al Bono Buen Pagador (BBP) del Fondo MiVivienda y de qué tipo."
@@ -329,9 +391,9 @@ const PropertyRegistrationPage = () => {
                                 </label>
                                 <div className="grid grid-cols-3 gap-2">
                                     {[
-                                        { label: 'Sin BBP', desc: 'No aplica (R5 / Mejoramiento)', val: null, color: 'gray' },
-                                        { label: 'Tradicional', desc: 'BBP Tradicional', val: false, color: 'blue' },
-                                        { label: 'Sostenible', desc: 'BBP Bono Verde', val: true, color: 'green' },
+                                        { label: 'Sin BBP', val: null, color: 'gray' },
+                                        { label: 'Tradicional', val: false, color: 'blue' },
+                                        { label: 'Sostenible', val: true, color: 'green' },
                                     ].map((op) => {
                                         const isActive =
                                             op.val === null
@@ -347,25 +409,88 @@ const PropertyRegistrationPage = () => {
                                                 key={op.label}
                                                 type="button"
                                                 onClick={() => setFormData(prev => ({ ...prev, es_sostenible: op.val ?? false }))}
-                                                className={`flex flex-col items-center py-2.5 px-2 rounded-xl border-2 transition-all duration-200 ${activeStyle}`}
+                                                className={`py-2 px-2 rounded-xl border-2 transition-all duration-200 text-center ${activeStyle}`}
                                             >
                                                 <span className="text-[10px] font-black uppercase tracking-wider">{op.label}</span>
-                                                <span className="text-[8px] font-semibold mt-0.5 opacity-60 normal-case text-center leading-tight">{op.desc}</span>
                                             </button>
                                         );
                                     })}
                                 </div>
+                                {/* Campo certificación solo si es sostenible */}
+                                {formData.es_sostenible === true && (
+                                    <div className="mt-3 animate-in fade-in duration-300 space-y-2">
+                                        <CustomSelect
+                                            label="Certificación Sostenible"
+                                            value={formData.certificacion_sostenible}
+                                            onChange={(val) => handleCustomChange('certificacion_sostenible', val)}
+                                            showInfo={true}
+                                            options={[
+                                                { id: 'EDGE', label: 'EDGE' },
+                                                { id: 'LEED', label: 'LEED' },
+                                                { id: 'Bono Verde', label: 'Bono Verde MiVivienda' },
+                                                { id: 'ISO 14001', label: 'ISO 14001' }
+                                            ]}
+                                        />
+                                        {!formData.certificacion_sostenible && (
+                                            <p className="text-[8px] font-semibold text-red-400 ml-1">⚠ Requerido para vivienda sostenible</p>
+                                        )}
+                                        
+                                        {/* Campos opcionales de ahorro - inline */}
+                                        <div className="flex gap-3 items-end">
+                                            <div className="flex-1">
+                                                <label className="block text-[7px] font-bold text-gray-400 uppercase mb-0.5 ml-1">Ahorro Energía (%)</label>
+                                                <input
+                                                    name="ahorro_energia"
+                                                    value={formData.ahorro_energia}
+                                                    onChange={handleChange}
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.1"
+                                                    placeholder="Opcional"
+                                                    className="w-full bg-gray-50 border border-gray-100 rounded-lg py-1.5 px-2 text-xs font-semibold text-gray-700 focus:outline-none focus:border-green-400"
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <label className="block text-[7px] font-bold text-gray-400 uppercase mb-0.5 ml-1">Ahorro Agua (%)</label>
+                                                <input
+                                                    name="ahorro_agua"
+                                                    value={formData.ahorro_agua}
+                                                    onChange={handleChange}
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.1"
+                                                    placeholder="Opcional"
+                                                    className="w-full bg-gray-50 border border-gray-100 rounded-lg py-1.5 px-2 text-xs font-semibold text-gray-700 focus:outline-none focus:border-green-400"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
 
                             {/* MODALIDAD + TIPO VENTA */}
-                            <CustomSelect
-                                label="Modalidad"
-                                value={formData.modalidad_vivienda}
-                                onChange={(val) => handleCustomChange('modalidad_vivienda', val)}
-                                showInfo={true}
-                                options={[{ id: 'Compra', label: 'Compra' }, { id: 'Construccion', label: 'Construcción' }, { id: 'Mejoramiento', label: 'Mejoramiento' }]}
-                            />
+                            <div>
+                                <CustomSelect
+                                    label="Modalidad"
+                                    value={formData.modalidad_vivienda}
+                                    onChange={(val) => handleCustomChange('modalidad_vivienda', val)}
+                                    showInfo={true}
+                                    options={[{ id: 'Compra', label: 'Compra' }, { id: 'Construccion', label: 'Construcción' }, { id: 'Mejoramiento', label: 'Mejoramiento' }]}
+                                />
+                                {/* Info cuota inicial mínima */}
+                                <div className="mt-1.5 flex items-center gap-1.5 ml-1">
+                                    <InfoOutlinedIcon sx={{ fontSize: 10, color: '#94a3b8' }} />
+                                    <span className="text-[7px] font-semibold text-gray-400">
+                                        Cuota inicial mín: {formData.modalidad_vivienda === 'Compra' ? '10%' : '7.5%'} del precio
+                                    </span>
+                                </div>
+                                {formData.modalidad_vivienda === 'Mejoramiento' && (
+                                    <p className="text-[7px] text-amber-500 font-semibold mt-1 ml-1">⚠ Mejoramiento no aplica a BBP</p>
+                                )}
+                            </div>
                             {formData.modalidad_vivienda === 'Compra' ? (
                                 <CustomSelect
                                     label="Tipo de Venta"
@@ -377,6 +502,16 @@ const PropertyRegistrationPage = () => {
                             ) : (
                                 <div className="flex items-center justify-center bg-gray-50 rounded-2xl border border-dashed border-gray-200 p-3">
                                     <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">No aplica</span>
+                                </div>
+                            )}
+
+                            {/* Aviso BBP Segunda Venta */}
+                            {formData.tipo_venta === 'Segunda venta' && (
+                                <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2 animate-in fade-in duration-300">
+                                    <span className="text-amber-500 text-sm">⚠</span>
+                                    <p className="text-[9px] font-semibold text-amber-700">
+                                        <strong>Aviso:</strong> Las viviendas de segunda venta NO califican para el Bono del Buen Pagador (BBP) según normativa FMV.
+                                    </p>
                                 </div>
                             )}
                         </div>

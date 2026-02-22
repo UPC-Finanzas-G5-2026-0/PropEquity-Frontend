@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import { getUnits } from '../services/unitService';
-import { runSimulation, exportSimulationExcel, exportSimulationPdf } from '../services/simulationService';
+import { createSimulation, exportToExcel, exportToPDF } from '../services/simulationService';
 import { useAuth } from '../context/AuthContext';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
@@ -20,7 +20,33 @@ const SimulationPage = () => {
     const [units, setUnits] = useState([]);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
+    const [serverError, setServerError] = useState(null);
     const [cuotaType, setCuotaType] = useState('porcentaje');
+
+    // Función para obtener título según el tipo de error del backend
+    const getErrorTitle = (errorMsg) => {
+        const lowerMsg = errorMsg.toLowerCase();
+        
+        if (lowerMsg.includes('90%') || lowerMsg.includes('financiamiento excede') || lowerMsg.includes('ltv')) {
+            return 'Financiamiento excede 90%';
+        }
+        if (lowerMsg.includes('cuota inicial') || lowerMsg.includes('inicial mínima') || lowerMsg.includes('10%')) {
+            return 'Cuota inicial insuficiente';
+        }
+        if (lowerMsg.includes('ingreso') || lowerMsg.includes('ratio') || lowerMsg.includes('40%') || lowerMsg.includes('50%')) {
+            return 'Capacidad de pago excedida';
+        }
+        if (lowerMsg.includes('plazo')) {
+            return 'Plazo fuera de rango';
+        }
+        if (lowerMsg.includes('bbp') || lowerMsg.includes('bono')) {
+            return 'Error con BBP';
+        }
+        if (lowerMsg.includes('precio') || lowerMsg.includes('mivivienda')) {
+            return 'Precio fuera de rango';
+        }
+        return 'Error de validación';
+    };
 
     const [formData, setFormData] = useState({
         codigo_unidad: '',
@@ -52,10 +78,13 @@ const SimulationPage = () => {
 
     const fetchUnits = async () => {
         try {
-            const data = await getUnits();
-            setUnits(data);
-            if (data.length > 0) {
-                setFormData(prev => ({ ...prev, codigo_unidad: String(data[0].codigo_unidad) }));
+            const response = await getUnits();
+            if (response.success) {
+                setUnits(response.data);
+                // Solo seleccionar primera unidad si no hay ninguna seleccionada
+                if (response.data.length > 0 && !formData.codigo_unidad) {
+                    setFormData(prev => ({ ...prev, codigo_unidad: String(response.data[0].codigo_unidad) }));
+                }
             }
         } catch (error) {
             console.error("Error cargando unidades:", error);
@@ -66,15 +95,35 @@ const SimulationPage = () => {
         const { name, value } = e.target;
         if (e.target.type === 'number' && parseFloat(value) < 0) return;
         setFormData(prev => ({ ...prev, [name]: value }));
+        setResult(null); // Limpiar resultado anterior cuando cambian parámetros
+        setServerError(null);
     };
 
     const handleCustomChange = (name, value) => {
         setFormData(prev => ({ ...prev, [name]: String(value) }));
+        setResult(null); // Limpiar resultado anterior cuando cambian parámetros
+        setServerError(null);
     };
 
     useEffect(() => {
         fetchUnits();
+        
+        // Refrescar cuando la ventana gana el foco (ej: vuelves de otra pestaña/página)
+        const handleFocus = () => fetchUnits();
+        window.addEventListener('focus', handleFocus);
+        
+        return () => window.removeEventListener('focus', handleFocus);
     }, []);
+
+    // BBP según DS 004-2025-VIVIENDA - Rangos y montos oficiales
+    const BONO_INTEGRADOR = 3600; // Bono adicional para categorías vulnerables
+    const BBP_RANGES = [
+        { min: 68800, max: 97800, rango: 'R1', tradicional: 35100, sostenible: 41400 },
+        { min: 97801, max: 146900, rango: 'R2', tradicional: 28000, sostenible: 34300 },
+        { min: 146901, max: 244600, rango: 'R3', tradicional: 20900, sostenible: 27200 },
+        { min: 244601, max: 362100, rango: 'R4', tradicional: 7800, sostenible: 14100 },
+        { min: 362101, max: 488800, rango: 'R5', tradicional: 0, sostenible: 0 }
+    ];
 
     const calculateBBP = (precio, moneda, sostenible = false, integrador = false, tc = 3.80) => {
         let pPEN = parseFloat(precio);
@@ -83,14 +132,28 @@ const SimulationPage = () => {
         // Si es USD, convertir a soles para validar rango según normativa FMV
         if (isUSD) pPEN = pPEN * tc;
 
-        let bonoPEN = 0;
-        if (pPEN >= 68800 && pPEN <= 98100) bonoPEN = integrador ? (sostenible ? 37300 : 31000) : (sostenible ? 33700 : 27400);
-        else if (pPEN > 98100 && pPEN <= 146900) bonoPEN = integrador ? (sostenible ? 32700 : 26400) : (sostenible ? 29100 : 22800);
-        else if (pPEN > 146900 && pPEN <= 244600) bonoPEN = integrador ? (sostenible ? 30800 : 24500) : (sostenible ? 27200 : 20900);
-        else if (pPEN > 244600 && pPEN <= 362100) bonoPEN = integrador ? (sostenible ? 17700 : 11400) : (sostenible ? 14100 : 7800);
+        // Buscar rango aplicable
+        const rangoAplicable = BBP_RANGES.find(r => pPEN >= r.min && pPEN <= r.max);
+        if (!rangoAplicable) return '0';
+
+        // Base BBP según tipo de vivienda
+        let bonoPEN = sostenible ? rangoAplicable.sostenible : rangoAplicable.tradicional;
+        
+        // Agregar Bono Integrador si aplica (solo en R1-R4)
+        if (integrador && rangoAplicable.rango !== 'R5') {
+            bonoPEN += BONO_INTEGRADOR;
+        }
 
         // Convertir el bono de vuelta a USD si la unidad está en esa moneda
         return isUSD ? (bonoPEN / tc).toFixed(2) : bonoPEN.toString();
+    };
+
+    // Obtener info de rango para mostrar en UI
+    const getRangoInfo = (precio, moneda, tc = 3.80) => {
+        let pPEN = parseFloat(precio);
+        const isUSD = moneda === 2 || moneda === 'USD';
+        if (isUSD) pPEN = pPEN * tc;
+        return BBP_RANGES.find(r => pPEN >= r.min && pPEN <= r.max) || null;
     };
 
     useEffect(() => {
@@ -117,12 +180,14 @@ const SimulationPage = () => {
             );
             setFormData(prev => ({ ...prev, bono_bbp: bono }));
         }
-    }, [formData.codigo_unidad, formData.vivienda_sostenible, formData.es_integrador, formData.categoria_integrador, formData.sin_bono, formData.ha_recibido_apoyo, formData.tiene_credito_activo, formData.tipo_cambio, units, user?.ingreso_mensual]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedUnit, formData.vivienda_sostenible, formData.es_integrador, formData.categoria_integrador, formData.sin_bono, formData.ha_recibido_apoyo, formData.tiene_credito_activo, formData.tipo_cambio, user?.ingreso_mensual]);
 
     useEffect(() => {
         if (formData.ifi_seleccionada && formData.codigo_tipo_tasa === '1') {
             setFormData(prev => ({ ...prev, codigo_tipo_tasa: '2' }));
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData.ifi_seleccionada]);
 
     useEffect(() => {
@@ -152,7 +217,10 @@ const SimulationPage = () => {
         const precio = selectedUnit?.precio_venta || 0;
         let finalCuotaInicial = cuotaType === 'porcentaje' ? (val / 100) * precio : val;
         const totalGastosCierre = parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_ifi || 0);
+
+        // El backend realiza todas las validaciones
         setLoading(true);
+        setServerError(null);
         try {
             const TIPO_TASA_MAP = { '1': 'Nominal', '2': 'Efectiva' };
             const TIPO_GRACIA_MAP = { '1': 'Ninguno', '2': 'Parcial', '3': 'Total' };
@@ -182,17 +250,36 @@ const SimulationPage = () => {
                 codigo_asesor: user?.role === 'Asesor' ? user.id : null,
                 fecha_inicio_prestamo: formData.fecha_inicio_prestamo
             };
-            const data = await runSimulation(payload);
-            setResult(data);
-            setTimeout(() => { document.getElementById('simulation-result')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
-        } catch (error) { console.error(error); alert("Error al simular."); } finally { setLoading(false); }
+            const response = await createSimulation(payload);
+            if (response.success) {
+                setResult(response.data);
+                setServerError(null);
+                setTimeout(() => { document.getElementById('simulation-result')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
+            } else {
+                // Mostrar error del backend directamente
+                setServerError({ 
+                    titulo: getErrorTitle(response.error),
+                    mensaje: response.error 
+                });
+                setResult(null);
+            }
+        } catch (error) { 
+            console.error(error);
+            const msg = error.message || 'Error al simular';
+            setServerError({ 
+                titulo: getErrorTitle(msg),
+                mensaje: msg 
+            });
+            setResult(null);
+        } finally { setLoading(false); }
     };
 
     useEffect(() => {
         if (selectedUnit) {
             setFormData(prev => ({ ...prev, vivienda_sostenible: selectedUnit.es_sostenible || false, es_integrador: false, sin_bono: true }));
         }
-    }, [formData.codigo_unidad, units]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedUnit]);
 
     return (
         <div className="flex bg-[#F8FAFC] min-h-screen font-['Inter',_sans-serif]">
@@ -212,16 +299,40 @@ const SimulationPage = () => {
                             <div className="space-y-3">
                                 <h3 className="text-[10px] font-black text-brand-blue uppercase tracking-widest border-b border-gray-50 pb-2 mb-1">Inmueble</h3>
                                 <CustomSelect label="Unidad" value={formData.codigo_unidad} showInfo={true} onChange={(val) => handleCustomChange('codigo_unidad', val)} options={units.map(u => ({ id: u.codigo_unidad, label: `${u.distrito_unidad} - ${u.direccion_unidad}` }))} />
+                                
+                                {/* Info del inmueble seleccionado */}
+                                {selectedUnit && (() => {
+                                    const rangoInfo = getRangoInfo(selectedUnit.precio_venta, selectedUnit.moneda || selectedUnit.codigo_moneda, parseFloat(formData.tipo_cambio || 3.80));
+                                    const m = selectedUnit.moneda === 2 || selectedUnit.codigo_moneda === 2;
+                                    return (
+                                        <div className="bg-gray-50/50 p-2 rounded-lg border border-gray-100 space-y-1">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[8px] font-bold text-gray-400 uppercase">Precio</span>
+                                                <span className="text-[10px] font-black text-gray-700">{m ? '$' : 'S/'} {parseFloat(selectedUnit.precio_venta).toLocaleString()}</span>
+                                            </div>
+                                            {rangoInfo ? (
+                                                <p className="text-[7px] font-semibold text-green-600">✓ {rangoInfo.rango} - Elegible MiVivienda</p>
+                                            ) : (
+                                                <p className="text-[7px] font-semibold text-red-500">⚠ Fuera de rango MiVivienda (S/68,800 - S/488,800)</p>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Plazo (Meses)</label>
-                                    <input type="number" name="plazo_meses" value={formData.plazo_meses} onChange={handleChange} className="w-full bg-transparent border-b border-gray-100 py-1 px-1 focus:outline-none focus:border-brand-blue font-black text-gray-700 text-sm" />
-                                    {parseInt(formData.plazo_meses) < 60 && <p className="text-[8px] text-red-500 font-bold mt-1">Mínimo 60 meses</p>}
+                                    <input type="number" name="plazo_meses" value={formData.plazo_meses} onChange={handleChange} min="60" max="240" className="w-full bg-transparent border-b border-gray-100 py-1 px-1 focus:outline-none focus:border-brand-blue font-black text-gray-700 text-sm" />
+                                    <p className="text-[7px] font-medium text-gray-400 mt-0.5 ml-1">Rango permitido: 60 - 240 meses (5 a 20 años)</p>
+                                    {parseInt(formData.plazo_meses) < 60 && <p className="text-[8px] text-red-500 font-bold ml-1">⚠ Mínimo 60 meses</p>}
+                                    {parseInt(formData.plazo_meses) > 240 && <p className="text-[8px] text-red-500 font-bold ml-1">⚠ Máximo 240 meses</p>}
+                                    {parseInt(formData.plazo_meses) >= 60 && parseInt(formData.plazo_meses) <= 240 && <p className="text-[7px] text-green-600 font-semibold ml-1">✓ Plazo válido</p>}
                                 </div>
                                 <CustomSelect label="Periodo de Gracia" value={formData.codigo_tipo_gracia} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_gracia', val)} options={[{ id: '1', label: 'Sin Gracia' }, { id: '2', label: 'Parcial' }, { id: '3', label: 'Total' }]} />
                                 {formData.codigo_tipo_gracia !== '1' && (
                                     <div className="animate-in fade-in duration-300">
                                         <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Meses de Gracia</label>
                                         <input type="number" name="meses_gracia" value={formData.meses_gracia} onChange={handleChange} className="w-full bg-transparent border-b border-gray-100 py-1 px-1 focus:outline-none focus:border-brand-blue font-black text-gray-700 text-sm" />
+                                        {parseInt(formData.meses_gracia) < 1 && <p className="text-[8px] text-red-500 font-bold mt-1">Requerido al menos 1 mes</p>}
+                                        {parseInt(formData.meses_gracia) >= parseInt(formData.plazo_meses) && <p className="text-[8px] text-red-500 font-bold mt-1">Debe ser menor al plazo</p>}
                                     </div>
                                 )}
                             </div>
@@ -238,13 +349,27 @@ const SimulationPage = () => {
                                         </div>
                                     </div>
                                     <input type="number" name="cuota_inicial" value={formData.cuota_inicial} onChange={handleChange} className="w-full bg-transparent border-b border-gray-100 py-1 px-1 focus:outline-none focus:border-brand-blue font-black text-gray-900 text-sm" />
-                                    {(() => {
+                                    {selectedUnit && (() => {
                                         const p = selectedUnit?.precio_venta || 0;
                                         const val = parseFloat(formData.cuota_inicial);
                                         const ini = cuotaType === 'porcentaje' ? (val / 100) * p : val;
                                         // Compras (Mod 1) exigen 10%. Construcción/Mejoramiento (Mod 2/3) exigen 7.5%.
                                         const minPerc = selectedUnit?.codigo_modalidad === 1 ? 0.10 : 0.075;
-                                        if (ini < (p * minPerc)) return <p className="text-[8px] text-red-500 font-bold mt-1">Mínimo {(minPerc * 100)}% ({selectedUnit?.moneda === 2 ? '$' : 'S/'} {(p * minPerc).toLocaleString()})</p>;
+                                        const minMonto = p * minPerc;
+                                        const moneda = selectedUnit?.moneda === 2 ? '$' : 'S/';
+                                        const isValid = ini >= minMonto;
+                                        return (
+                                            <>
+                                                <p className="text-[7px] font-medium text-gray-400 mt-0.5 ml-1">
+                                                    Mínimo {(minPerc * 100)}%: {moneda} {minMonto.toLocaleString()}
+                                                </p>
+                                                {isValid ? (
+                                                    <p className="text-[7px] text-green-600 font-semibold ml-1">✓ Cuota inicial válida ({((ini / p) * 100).toFixed(1)}%)</p>
+                                                ) : (
+                                                    <p className="text-[7px] text-red-500 font-semibold ml-1">⚠ Insuficiente (actual: {((ini / p) * 100).toFixed(1)}%)</p>
+                                                )}
+                                            </>
+                                        );
                                     })()}
                                 </div>
                                 {selectedUnit && (
@@ -259,7 +384,12 @@ const SimulationPage = () => {
                                         const p = parseFloat(selectedUnit?.precio_venta || 0);
                                         const mod = parseInt(selectedUnit?.codigo_modalidad || 0);
                                         const isOwner = user?.es_propietario_vivienda;
-                                        if (p > 362100 || mod === 3 || isOwner) return <p className="text-[8px] font-bold text-red-400 p-2 uppercase text-center">BBP No aplica</p>;
+                                        
+                                        // Razones por las que BBP no aplica
+                                        if (p > 362100) return <p className="text-[8px] font-bold text-amber-500 p-2 uppercase text-center">R5: Solo Bono Integrador</p>;
+                                        if (mod === 3) return <p className="text-[8px] font-bold text-red-400 p-2 uppercase text-center">Mejoramiento: Sin BBP</p>;
+                                        if (isOwner) return <p className="text-[8px] font-bold text-red-400 p-2 uppercase text-center">Propietario actual: Sin BBP</p>;
+                                        
                                         const isSostenible = selectedUnit?.es_sostenible || false;
                                         const opciones = isSostenible
                                             ? [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Sostenible', sinBono: false, sostenible: true, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: true, integrador: true }]
@@ -315,11 +445,25 @@ const SimulationPage = () => {
                             {/* Detalle Gastos */}
                             <div className="space-y-4">
                                 <h3 className="text-[10px] font-black text-brand-blue uppercase tracking-widest border-b border-gray-50 pb-2 mb-1">Detalle</h3>
-                                <div className="bg-gray-50/20 p-2.5 rounded-xl border border-gray-100 grid grid-cols-2 gap-3">
-                                    <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Tasación</label><input type="number" name="gastos_tasacion" value={formData.gastos_tasacion} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
-                                    <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">CRI/Títulos</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
-                                    <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Notaría</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
-                                    <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Comis. Banco</label><input type="number" name="comision_ifi" value={formData.comision_ifi} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
+                                <div className="bg-gray-50/20 p-2.5 rounded-xl border border-gray-100 space-y-2">
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Tasación</label><input type="number" name="gastos_tasacion" value={formData.gastos_tasacion} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
+                                        <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">CRI/Títulos</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
+                                        <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Notaría</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
+                                        <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Comis. Banco</label><input type="number" name="comision_ifi" value={formData.comision_ifi} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
+                                    </div>
+                                    {/* Indicador % gastos cierre */}
+                                    {selectedUnit && (() => {
+                                        const totalGastos = parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_ifi || 0);
+                                        const precio = parseFloat(selectedUnit.precio_venta || 0);
+                                        const pct = precio > 0 ? (totalGastos / precio) * 100 : 0;
+                                        const isValid = pct <= 5;
+                                        return (
+                                            <div className={`text-[7px] font-semibold px-1 ${isValid ? 'text-green-600' : 'text-red-500'}`}>
+                                                {isValid ? '✓' : '⚠'} Gastos cierre: {pct.toFixed(2)}% del precio (máx. 5%)
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                                 <div className="pt-2">
                                     <button onClick={handleSimulate} disabled={loading} className="w-full bg-brand-orange hover:bg-orange-600 text-white py-3.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-brand-orange/20 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95">
@@ -374,90 +518,57 @@ const SimulationPage = () => {
 
                             <div className="bg-brand-blue/20 p-5 rounded-xl border border-brand-blue/30 text-center relative overflow-hidden shadow-inner">
                                 <AccountBalanceIcon className="absolute -right-3 -bottom-3 opacity-10 text-brand-blue-light" sx={{ fontSize: 80 }} />
-                                <p className="text-[9px] font-black text-brand-blue-light uppercase mb-1.5 tracking-[0.2em] relative z-10">Cuota Mensual Estimada</p>
-                                <p className="text-3xl font-black text-white relative z-10 drop-shadow-md">
-                                    S/ {(() => {
-                                        const p = parseFloat(selectedUnit?.precio_venta || 0);
-                                        const b = parseFloat(formData.bono_bbp || 0);
-                                        const val = parseFloat(formData.cuota_inicial || 0);
-                                        const ini = cuotaType === 'porcentaje' ? (val / 100) * p : val;
-                                        const principal = p - ini - b;
-                                        const annualRate = parseFloat(formData.tasa_anual) / 100;
-                                        const n = parseInt(formData.plazo_meses);
-
-                                        if (principal <= 0 || n <= 0 || isNaN(annualRate)) return "0.00";
-
-                                        let tea = annualRate;
-                                        if (formData.codigo_tipo_tasa === '1') {
-                                            const m_map = { 'Diaria': 360, 'Quincenal': 24, 'Mensual': 12, 'Trimestral': 4, 'Semestral': 2 };
-                                            const m = m_map[formData.capitalizacion] || 12;
-                                            tea = Math.pow(1 + annualRate / m, m) - 1;
-                                        }
-
-                                        const tem = Math.pow(1 + tea, 1 / 12) - 1;
-                                        const cuota = (principal * tem) / (1 - Math.pow(1 + tem, -n));
-                                        return cuota.toLocaleString(undefined, { maximumFractionDigits: 2 });
-                                    })()}
+                                <p className="text-[9px] font-black text-brand-blue-light uppercase mb-1.5 tracking-[0.2em] relative z-10">
+                                    Cuota Mensual
                                 </p>
-                                <p className="text-[8px] text-gray-500 font-bold uppercase mt-2 relative z-10 tracking-widest">Amortización + Interés</p>
+                                {result ? (
+                                    <>
+                                        <p className="text-3xl font-black text-white relative z-10 drop-shadow-md">
+                                            {result.codigo_moneda === 1 ? 'S/' : '$'} {parseFloat(result.detalles[1]?.cuota_total || result.detalles[0]?.cuota_total).toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                                        </p>
+                                        <p className="text-[8px] text-emerald-400 font-bold uppercase mt-2 relative z-10 tracking-widest">✓ Calculado por el sistema</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-2xl font-black text-gray-400 relative z-10">
+                                            --
+                                        </p>
+                                        <p className="text-[8px] text-gray-500 font-bold uppercase mt-2 relative z-10 tracking-widest">Generar simulación para ver</p>
+                                    </>
+                                )}
                             </div>
 
-                            {/* Alertas Normativas (Blindaje Frontend) */}
+                            {/* Mensaje de error del backend */}
                             <div className="space-y-2 mt-4">
-                                {(() => {
-                                    const p = parseFloat(selectedUnit?.precio_venta || 0);
-                                    const b = parseFloat(formData.bono_bbp || 0);
-                                    const val = parseFloat(formData.cuota_inicial || 0);
-                                    const ini = cuotaType === 'porcentaje' ? (val / 100) * p : val;
-                                    const principal = p - ini - b;
-                                    const gastos = (parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_ifi || 0));
-
-                                    const alerts = [];
-
-                                    // 1. Ratio de Esfuerzo (40% / 50%) -> USANDO INGRESO FAMILIAR (Titular + Cónyuge)
-                                    const ingresoTitular = parseFloat(user?.ingreso_mensual || 0);
-                                    const ingresoConyuge = parseFloat(user?.ingreso_conyuge || 0);
-                                    const ingresoFamiliar = ingresoTitular + ingresoConyuge;
-
-                                    const ratioLimit = p <= 205000 ? 0.40 : 0.50;
-
-                                    // Cálculo rápido de cuota para la alerta
-                                    const annualRate = parseFloat(formData.tasa_anual) / 100;
-                                    const n = parseInt(formData.plazo_meses);
-                                    let tea = annualRate;
-                                    if (formData.codigo_tipo_tasa === '1') {
-                                        const m_map = { 'Diaria': 360, 'Quincenal': 24, 'Mensual': 12, 'Trimestral': 4, 'Semestral': 2 };
-                                        const m = m_map[formData.capitalizacion] || 12;
-                                        tea = Math.pow(1 + annualRate / m, m) - 1;
-                                    }
-                                    const tem = Math.pow(1 + tea, 1 / 12) - 1;
-                                    const cuota = (principal > 0 && n > 0 && !isNaN(tea)) ? (principal * tem) / (1 - Math.pow(1 + tem, -n)) : 0;
-
-                                    if (ingresoFamiliar > 0 && (cuota / ingresoFamiliar) > ratioLimit) {
-                                        alerts.push({ msg: `Cuota excede el ${(ratioLimit * 100)}% del Ingreso Familiar Mensual (IFM)`, type: 'critica' });
-                                    }
-
-                                    // 2. LTV (90% Max)
-                                    if (p > 0 && (principal / p) > 0.90) {
-                                        alerts.push({ msg: "El crédito neto no puede exceder el 90% del valor de venta", type: 'critica' });
-                                    }
-
-                                    // 3. Validación Ahorro Programado (Min 6 meses)
-                                    if (Number(user?.codigo_tipo_ingreso) === 3 && Number(user?.meses_ahorro || 0) < 6) {
-                                        alerts.push({ msg: "Inhabilitado: Ahorro programado requiere historial mínimo de 6 meses", type: 'critica' });
-                                    }
-
-                                    return alerts.map((a, i) => (
-                                        <div key={i} className="animate-in slide-in-from-right duration-500 bg-rose-500/10 border border-rose-500/20 p-2 rounded-lg flex items-start gap-2">
-                                            <ErrorOutlineIcon className="text-rose-400 mt-0.5" sx={{ fontSize: 12 }} />
-                                            <p className="text-[7px] font-black text-rose-300 uppercase leading-tight tracking-tight">{a.msg}</p>
+                                {serverError ? (
+                                    <div className="bg-rose-500/15 border border-rose-500/30 p-2.5 rounded-lg">
+                                        <div className="flex items-start gap-2">
+                                            <ErrorOutlineIcon className="text-rose-400 shrink-0 mt-0.5" sx={{ fontSize: 14 }} />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[9px] font-bold text-rose-300">{serverError.titulo}</p>
+                                                <p className="text-[8px] text-rose-200/80 mt-1 leading-relaxed">{serverError.mensaje}</p>
+                                                <button 
+                                                    onClick={() => setServerError(null)} 
+                                                    className="mt-2 px-2 py-0.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded text-[8px] font-bold transition-colors"
+                                                >
+                                                    Cerrar
+                                                </button>
+                                            </div>
                                         </div>
-                                    ));
-                                })()}
+                                    </div>
+                                ) : !selectedUnit && (
+                                    <div className="bg-blue-500/15 border border-blue-500/30 p-2.5 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <InfoOutlinedIcon className="text-blue-400" sx={{ fontSize: 14 }} />
+                                            <p className="text-[9px] font-bold text-blue-300">Seleccione una unidad para simular</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
                 </div>
+
 
                 {result && (
                     <div id="simulation-result" className="animate-in fade-in slide-in-from-bottom-5 duration-700">
@@ -475,17 +586,19 @@ const SimulationPage = () => {
                             ))}
                         </div>
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="p-4 border-b border-gray-50 flex justify-between items-center"><h3 className="text-xs font-black text-gray-900 uppercase tracking-tighter">Cronograma de Pagos</h3><div className="flex gap-2"><button onClick={() => exportSimulationExcel(result.codigo_simulacion)} className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-black text-[8px] uppercase hover:bg-green-100">Excel</button><button onClick={() => exportSimulationPdf(result.codigo_simulacion)} className="px-3 py-1.5 bg-red-50 text-red-700 rounded-lg font-black text-[8px] uppercase hover:bg-red-100">PDF</button></div></div>
+                            <div className="p-4 border-b border-gray-50 flex justify-between items-center"><h3 className="text-xs font-black text-gray-900 uppercase tracking-tighter">Cronograma de Pagos</h3><div className="flex gap-2"><button onClick={() => exportToExcel(result.codigo_simulacion)} className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-black text-[8px] uppercase hover:bg-green-100">Excel</button><button onClick={() => exportToPDF(result.codigo_simulacion)} className="px-3 py-1.5 bg-red-50 text-red-700 rounded-lg font-black text-[8px] uppercase hover:bg-red-100">PDF</button></div></div>
                             <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="bg-gray-50/30 text-[7px] font-black text-gray-400 uppercase">
-                                <th className="px-5 py-2.5 border-b border-gray-100">N° Cuota</th><th className="px-5 py-2.5 border-b border-gray-100 text-center">Vencimiento</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Amortización</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Interés</th><th className="px-5 py-2.5 border-b border-gray-100 text-right bg-brand-blue/5 text-brand-blue">Cuota Total</th>
+                                <th className="px-5 py-2.5 border-b border-gray-100">N° Cuota</th><th className="px-5 py-2.5 border-b border-gray-100 text-center">Vencimiento</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Saldo Inicial</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Amortización</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Interés</th><th className="px-5 py-2.5 border-b border-gray-100 text-right bg-brand-blue/5 text-brand-blue">Cuota Total</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Saldo Final</th>
                             </tr></thead><tbody className="divide-y divide-gray-50 text-[9px] font-bold text-gray-700">
-                                    {result.detalles.slice(0, 15).map((cuota) => (
+                                    {result.detalles.map((cuota) => (
                                         <tr key={cuota.numero_cuota} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-5 py-2.5">Cuota #{cuota.numero_cuota}</td>
-                                            <td className="px-5 py-2.5 text-center text-gray-400">{cuota.fecha_pago}</td>
+                                            <td className="px-5 py-2.5">#{cuota.numero_cuota}</td>
+                                            <td className="px-5 py-2.5 text-center text-gray-400">{cuota.fecha_vencimiento}</td>
+                                            <td className="px-5 py-2.5 text-right">S/ {cuota.saldo_inicio?.toLocaleString()}</td>
                                             <td className="px-5 py-2.5 text-right">S/ {cuota.amortizacion.toLocaleString()}</td>
                                             <td className="px-5 py-2.5 text-right">S/ {cuota.interes.toLocaleString()}</td>
                                             <td className="px-5 py-2.5 text-right font-black text-brand-blue bg-brand-blue/[0.01]">S/ {cuota.cuota_total.toLocaleString()}</td>
+                                            <td className="px-5 py-2.5 text-right">S/ {cuota.saldo_final?.toLocaleString()}</td>
                                         </tr>
                                     ))}
                                 </tbody></table></div>

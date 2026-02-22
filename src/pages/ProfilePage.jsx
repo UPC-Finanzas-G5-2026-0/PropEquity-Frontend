@@ -7,7 +7,7 @@ import BadgeIcon from '@mui/icons-material/Badge';
 import WorkIcon from '@mui/icons-material/Work';
 import CustomSelect from '../components/CustomSelect';
 
-import { getClientByCode, updateClient } from '../services/clientService';
+import { getMyProfile, updateProfile } from '../services/clientService';
 
 const ProfilePage = () => {
     const { user, updateUser } = useAuth();
@@ -20,11 +20,12 @@ const ProfilePage = () => {
             if (user?.id) {
                 setLoadingData(true);
                 try {
-                    const clientData = await getClientByCode(user.id);
-                    if (clientData) {
+                    const response = await getMyProfile();
+                    if (response.success && response.data) {
+                        const clientData = response.data;
                         const usuario = clientData.usuario || {};
                         setFormData({
-                            id: clientData.id || user.id,
+                            id: clientData.codigo_cliente || clientData.id || user.id,
                             nombres: usuario.nombres || clientData.nombres || user.nombres || '',
                             apellidos: usuario.apellidos || clientData.apellidos || user.apellidos || '',
                             dni: clientData.dni_cliente || clientData.dni || '',
@@ -81,12 +82,16 @@ const ProfilePage = () => {
                 conyuge_propietario: Boolean(formData.conyuge_propietario),
                 es_propietario_vivienda: Boolean(formData.es_propietario_vivienda)
             };
-            await updateClient(formData.id, payload);
-            if (updateUser) {
-                updateUser({ nombres: formData.nombres, apellidos: formData.apellidos, names: `${formData.nombres} ${formData.apellidos}`, dni: formData.dni, telefono: formData.telefono, ingreso_mensual: formData.ingreso_mensual });
+            const response = await updateProfile(formData.id, payload);
+            if (response.success) {
+                if (updateUser) {
+                    updateUser({ nombres: formData.nombres, apellidos: formData.apellidos, names: `${formData.nombres} ${formData.apellidos}`, dni: formData.dni, telefono: formData.telefono, ingreso_mensual: formData.ingreso_mensual });
+                }
+                setIsEditing(false);
+                alert("Perfil actualizado correctamente");
+            } else {
+                alert(`Error: ${response.error}`);
             }
-            setIsEditing(false);
-            alert("Perfil actualizado correctamente");
         } catch (error) {
             console.error(error);
             alert("Error al guardar.");

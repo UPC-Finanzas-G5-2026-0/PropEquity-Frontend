@@ -62,8 +62,12 @@ const RegisterPage = () => {
         setError('Completa todos los datos de identidad.');
         return false;
       }
-      if (formData.dni.length !== 8) {
-        setError('El DNI debe contener exactamente 8 dígitos.');
+      if (formData.dni.length !== 8 || !/^\d{8}$/.test(formData.dni)) {
+        setError('El DNI debe contener exactamente 8 dígitos numéricos.');
+        return false;
+      }
+      if (!/^9\d{8}$/.test(formData.telefono)) {
+        setError('El teléfono debe tener 9 dígitos y comenzar con 9.');
         return false;
       }
     } else if (currentStep === 3) {

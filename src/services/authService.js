@@ -19,7 +19,10 @@ export const login = async (email, password) => {
   });
 
   if (response.data.access_token) {
-    localStorage.setItem('token', response.data.access_token);
+    localStorage.setItem('access_token', response.data.access_token);
+    localStorage.setItem('user_role', response.data.rol_usuario);
+    localStorage.setItem('user_id', response.data.codigo_usuario);
+    localStorage.setItem('user_email', response.data.email);
   }
 
   return response.data;
@@ -31,5 +34,17 @@ export const register = async (userData) => {
 };
 
 export const logout = () => {
-  localStorage.removeItem('token');
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('user_role');
+  localStorage.removeItem('user_id');
+  localStorage.removeItem('user_email');
+  window.location.href = '/login';
+};
+
+export const isAuthenticated = () => {
+  return !!localStorage.getItem('access_token');
+};
+
+export const getUserRole = () => {
+  return localStorage.getItem('user_role');
 };
