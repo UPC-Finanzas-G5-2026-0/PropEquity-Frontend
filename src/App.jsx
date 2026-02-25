@@ -15,7 +15,7 @@ function App() {
       <AuthProvider>
         <Routes>
           {/* Redirección automática a Login al entrar a la raíz */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<PropertyRegistrationPage />} />
 
           {/* Rutas Públicas */}
           <Route path="/login" element={<LoginPage />} />
