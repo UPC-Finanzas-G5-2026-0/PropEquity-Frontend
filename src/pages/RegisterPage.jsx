@@ -189,14 +189,14 @@ const RegisterPage = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
                   <input name="email" type="email" placeholder="ejemplo@propequity.pe" value={formData.email}
-                         className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
-                         onChange={handleChange} />
+                    className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
+                    onChange={handleChange} />
                 </div>
                 <div className="relative">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
                   <input name="password" type={showPassword ? "text" : "password"} placeholder="Mínimo 8 caracteres" value={formData.password}
-                         className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
-                         onChange={handleChange} />
+                    className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
+                    onChange={handleChange} />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-0 bottom-2 text-gray-500 hover:text-gray-700">
                     {showPassword ? <VisibilityOff /> : <Visibility />}
                   </button>
@@ -222,28 +222,28 @@ const RegisterPage = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Nombres</label>
                     <input name="first_name" type="text" value={formData.first_name}
-                           className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
-                           onChange={handleChange} />
+                      className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
+                      onChange={handleChange} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Apellidos</label>
                     <input name="last_name" type="text" value={formData.last_name}
-                           className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
-                           onChange={handleChange} />
+                      className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
+                      onChange={handleChange} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">DNI</label>
                     <input name="dni" type="text" maxLength="8" placeholder="8 dígitos" value={formData.dni}
-                           className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
-                           onChange={handleChange} />
+                      className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
+                      onChange={handleChange} />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Celular</label>
                     <input name="telefono" type="text" maxLength="9" value={formData.telefono}
-                           className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
-                           onChange={handleChange} />
+                      className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
+                      onChange={handleChange} />
                   </div>
                 </div>
               </div>
@@ -255,8 +255,8 @@ const RegisterPage = () => {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Ingreso Mensual Neto (S/)</label>
                   <input name="ingreso_mensual" type="number" placeholder="4500.00" value={formData.ingreso_mensual}
-                         className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
-                         onChange={handleChange} />
+                    className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
+                    onChange={handleChange} />
                 </div>
 
                 <CustomSelect
@@ -274,8 +274,8 @@ const RegisterPage = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Meses de ahorro demostrable</label>
                     <input name="meses_ahorro" type="number" min="0" value={formData.meses_ahorro}
-                           className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
-                           onChange={handleChange} />
+                      className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors"
+                      onChange={handleChange} />
                     <p className="text-xs text-gray-400 mt-1">Mínimo 6 meses exigido por las IFIs.</p>
                   </div>
                 )}
@@ -291,27 +291,27 @@ const RegisterPage = () => {
             {step === 4 && (
               <div className="space-y-5">
                 <CustomSelect label="Estado Civil" value={formData.codigo_estado_civil} onChange={(val) => handleCustomChange('codigo_estado_civil', val)}
-                              options={[{ id: 1, label: 'Soltero' }, { id: 2, label: 'Casado' }, { id: 3, label: 'Conviviente' }, { id: 4, label: 'Divorciado' }, { id: 5, label: 'Viudo' }]}
+                  options={[{ id: 1, label: 'Soltero' }, { id: 2, label: 'Casado' }, { id: 3, label: 'Conviviente' }, { id: 4, label: 'Divorciado' }, { id: 5, label: 'Viudo' }]}
                 />
 
                 {[2, 3].includes(Number(formData.codigo_estado_civil)) && (
                   <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
                     <p className="text-sm font-medium text-gray-700">Datos del Cónyuge / Conviviente</p>
                     <input name="nombre_conyuge" type="text" placeholder="Apellidos y Nombres del cónyuge"
-                           className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors text-sm"
-                           onChange={handleChange} />
+                      className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors text-sm"
+                      onChange={handleChange} />
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs text-gray-500 mb-1">DNI Cónyuge</label>
                         <input name="doc_conyuge" type="text" placeholder="8 dígitos"
-                               className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors text-sm"
-                               onChange={handleChange} />
+                          className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors text-sm"
+                          onChange={handleChange} />
                       </div>
                       <div>
                         <label className="block text-xs text-gray-500 mb-1">Ingreso mensual (S/)</label>
                         <input name="ingreso_conyuge" type="number" placeholder="0.00"
-                               className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors text-sm"
-                               onChange={handleChange} />
+                          className="w-full border-b border-gray-300 py-2 focus:outline-none focus:border-brand-orange transition-colors text-sm"
+                          onChange={handleChange} />
                       </div>
                     </div>
                     <label className="flex items-center space-x-2 cursor-pointer">
@@ -351,12 +351,12 @@ const RegisterPage = () => {
             <div className="flex gap-3 pt-2">
               {step > 1 && (
                 <button type="button" onClick={handleBack}
-                        className="px-6 py-3 border border-gray-300 text-gray-600 font-semibold rounded-lg hover:bg-gray-50 transition duration-200">
+                  className="px-6 py-3 border border-gray-300 text-gray-600 font-semibold rounded-lg hover:bg-gray-50 transition duration-200">
                   Atrás
                 </button>
               )}
               <button type="button" onClick={handleNext} disabled={loading}
-                      className="flex-1 bg-brand-orange text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition duration-200 shadow-lg disabled:opacity-70">
+                className="flex-1 bg-brand-orange text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition duration-200 shadow-lg disabled:opacity-70">
                 {loading ? 'Procesando...' : (step === totalSteps ? 'Crear Cuenta' : 'Siguiente')}
               </button>
             </div>
