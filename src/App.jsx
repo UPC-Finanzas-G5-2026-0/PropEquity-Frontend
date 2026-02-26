@@ -23,6 +23,9 @@ function App() {
 
           {/* Rutas Privadas - Cliente */}
           <Route path="/cliente/dashboard" element={<ClientDashboard />} />
+          <Route path="/dashboard/client" element={<ClientDashboard />} />
+          <Route path="/simulation" element={<SimulationPage />} />
+          <Route path="/simulation/:id" element={<SimulationPage />} />
           <Route path="/simulador" element={<SimulationPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/configuracion" element={<SettingsPage />} />
@@ -30,6 +33,7 @@ function App() {
           {/* Rutas Privadas - Asesor / Admin */}
           <Route path="/dashboard" element={<PropertyRegistrationPage />} />
           <Route path="/propiedades" element={<PropertyRegistrationPage />} />
+          <Route path="/property/register" element={<PropertyRegistrationPage />} />
           <Route path="/clientes" element={<PropertyRegistrationPage />} />
         </Routes>
       </AuthProvider>

@@ -30,17 +30,24 @@ export const AuthProvider = ({ children }) => {
       const userData = {
         token: data.access_token,
         role: data.role, // 'Administrador', 'Asesor', 'Cliente'
-        id: data.id || data.codigo_usuario || data.user_id, // Intentamos capturar el ID de varias formas
+        // codigo_usuario es el campo que devuelve el backend en login/signup
+        id: data.codigo_usuario || data.user_id || data.id,
+        codigo_usuario: data.codigo_usuario || data.user_id || data.id,
         names: `${data.nombres} ${data.apellidos}`,
         nombres: data.nombres,
         apellidos: data.apellidos,
-        email: email, // El backend a veces no devuelve el email en el login, lo tomamos del input
+        email: email,
         dni: data.dni,
         telefono: data.telefono,
-        ingreso_mensual: data.ingreso_mensual
+        ingreso_mensual: data.ingreso_mensual,
+        ingreso_conyuge: data.ingreso_conyuge || 0,
+        codigo_tipo_ingreso: data.codigo_tipo_ingreso || 1,
+        meses_ahorro: data.meses_ahorro || 0,
+        es_propietario_vivienda: data.es_propietario_vivienda,
+        ha_recibido_apoyo: data.ha_recibido_apoyo || false
       };
       localStorage.setItem('token', userData.token);
-      localStorage.setItem('user', JSON.stringify(userData)); // Guardamos todo el objeto
+      localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
     }
     return data;

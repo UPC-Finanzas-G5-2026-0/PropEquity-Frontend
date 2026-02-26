@@ -1,9 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Sidebar from '../components/Sidebar';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import { Tooltip } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { createUnit, getUnits, updateUnit, deleteUnit } from '../services/unitService';
+import CustomSelect from '../components/CustomSelect';
+
+// Todos los distritos de Lima Metropolitana
+const DISTRITOS_LIMA = [
+    'Ate', 'Barranco', 'Breña', 'Carabayllo', 'Cercado de Lima', 'Chaclacayo', 'Chorrillos',
+    'Cieneguilla', 'Comas', 'El Agustino', 'Independencia', 'Jesús María', 'La Molina',
+    'La Victoria', 'Lince', 'Los Olivos', 'Lurigancho', 'Lurín', 'Magdalena del Mar',
+    'Miraflores', 'Pachacamac', 'Pucusana', 'Pueblo Libre', 'Puente Piedra', 'Punta Hermosa',
+    'Punta Negra', 'Rímac', 'San Bartolo', 'San Borja', 'San Isidro', 'San Juan de Lurigancho',
+    'San Juan de Miraflores', 'San Luis', 'San Martín de Porres', 'San Miguel', 'Santa Anita',
+    'Santa María del Mar', 'Santa Rosa', 'Santiago de Surco', 'Surquillo', 'Villa El Salvador',
+    'Villa María del Triunfo', 'Callao', 'Bellavista', 'La Perla', 'La Punta', 'Ventanilla'
+];
 
 const PropertyRegistrationPage = () => {
     const { user } = useAuth();
@@ -11,32 +28,34 @@ const PropertyRegistrationPage = () => {
         direccion: '',
         distrito: '',
         precio: '',
-        moneda: '1', // 1: Soles, 2: Dolares
+        moneda: 'PEN',
         area: '',
-        estado: '1', // 1: Activo, 2: Inactivo
+        estado_registro: 'Activo',
+        modalidad_vivienda: 'Compra',
+        tipo_venta: 'Primera venta',
+        es_sostenible: false,
+        certificacion_sostenible: '',
+        ahorro_energia: '',
+        ahorro_agua: '',
+        materiales_eco: false,
         foto: null
     });
     const [preview, setPreview] = useState(null);
+    const [fotoRemoved, setFotoRemoved] = useState(false);
     const [loading, setLoading] = useState(false);
     const [editingId, setEditingId] = useState(null);
-
-    // Lista de propiedades
     const [properties, setProperties] = useState([]);
 
-    // Estados para los dropdowns personalizados
-    const [openDistrito, setOpenDistrito] = useState(false);
-    const [openMoneda, setOpenMoneda] = useState(false);
-    const [openEstado, setOpenEstado] = useState(false);
-
-    // Cargar propiedades al inicio
     useEffect(() => {
         fetchProperties();
     }, []);
 
     const fetchProperties = async () => {
         try {
-            const data = await getUnits();
-            setProperties(data);
+            const response = await getUnits();
+            if (response.success) {
+                setProperties(response.data);
+            }
         } catch (error) {
             console.error("Error cargando propiedades:", error);
         }
@@ -44,6 +63,10 @@ const PropertyRegistrationPage = () => {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleCustomChange = (name, value) => {
+        setFormData({ ...formData, [name]: String(value) });
     };
 
     const handleFileChange = (e) => {
@@ -54,46 +77,43 @@ const PropertyRegistrationPage = () => {
         }
     };
 
+    // Mapeo inverso: códigos del backend → strings del frontend
+    const mapPropFromApi = (prop) => ({
+        direccion: String(prop.direccion_unidad || ''),
+        distrito: String(prop.distrito_unidad || ''),
+        precio: String(prop.precio_venta || ''),
+        moneda: prop.codigo_moneda === 2 ? 'USD' : 'PEN',
+        area: String(prop.area_unidad || ''),
+        estado_registro: prop.codigo_estado === 2 ? 'Inactivo' : 'Activo',
+        modalidad_vivienda: prop.codigo_modalidad === 2 ? 'Construccion'
+            : prop.codigo_modalidad === 3 ? 'Mejoramiento' : 'Compra',
+        tipo_venta: prop.codigo_tipo_venta === 2 ? 'Segunda venta' : 'Primera venta',
+        es_sostenible: prop.es_sostenible || false,
+        certificacion_sostenible: prop.certificacion_sostenible || '',
+        ahorro_energia: prop.ahorro_energia ? String(prop.ahorro_energia) : '',
+        ahorro_agua: prop.ahorro_agua ? String(prop.ahorro_agua) : '',
+        materiales_eco: prop.es_sostenible || false,
+        foto: prop.foto
+    });
+
     const handleEdit = (prop) => {
-        // El ID puede venir como codigo_unidad o ser el id que pasamos nosotros
         const id = prop.codigo_unidad || prop.codigo_unit;
-        if (!id) {
-            console.error("No se pudo encontrar el ID de la propiedad:", prop);
-            alert("Error: No se encontró el identificador de la propiedad.");
-            return;
-        }
-
+        if (!id) return;
         setEditingId(id);
-
-        // Cargamos los datos asegurándonos de que sean strings para los inputs
-        setFormData({
-            direccion: String(prop.direccion_unidad || prop.direccion_unit || ''),
-            distrito: String(prop.distrito_unidad || prop.distrito_unit || ''),
-            precio: String(prop.precio_venta || ''),
-            moneda: String(prop.codigo_moneda || '1'),
-            area: String(prop.area_unidad || prop.area_unit || ''),
-            estado: String(prop.codigo_estado || '1'),
-            foto: prop.foto // Esto se queda como la URL/Path actual
-        });
-
-        if (prop.foto) {
-            setPreview(`http://localhost:8000${prop.foto}`);
-        } else {
-            setPreview(null);
-        }
+        setFotoRemoved(false);
+        setFormData(mapPropFromApi(prop));
+        if (prop.foto) setPreview(`http://localhost:8000${prop.foto}`);
+        else setPreview(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const handleCancelEdit = () => {
         setEditingId(null);
+        setFotoRemoved(false);
         setFormData({
-            direccion: '',
-            distrito: '',
-            precio: '',
-            moneda: '1',
-            area: '',
-            estado: '1',
-            foto: null
+            direccion: '', distrito: '', precio: '', moneda: 'PEN', area: '', estado_registro: 'Activo',
+            modalidad_vivienda: 'Compra', tipo_venta: 'Primera venta', es_sostenible: false,
+            certificacion_sostenible: '', ahorro_energia: '', ahorro_agua: '', materiales_eco: false, foto: null
         });
         setPreview(null);
     };
@@ -101,374 +121,534 @@ const PropertyRegistrationPage = () => {
     const handleDelete = async (id) => {
         if (window.confirm("¿Estás seguro de que deseas eliminar esta propiedad?")) {
             try {
-                await deleteUnit(id);
-                alert("Propiedad eliminada exitosamente.");
-                fetchProperties();
+                const response = await deleteUnit(id);
+                if (response.success) {
+                    fetchProperties();
+                } else {
+                    alert(response.error);
+                }
             } catch (error) {
                 console.error("Error eliminando propiedad:", error);
-                alert("Hubo un error al intentar eliminar la propiedad.");
             }
         }
     };
 
     const handleSubmit = async () => {
-        if (!formData.direccion || !formData.distrito || !formData.precio || !formData.area) {
-            alert("Por favor completa todos los campos obligatorios.");
+        const precioVal = parseFloat(formData.precio);
+        const areaVal = parseFloat(formData.area);
+
+        // Validaciones básicas
+        if (!formData.direccion || !formData.distrito || isNaN(precioVal) || isNaN(areaVal)) {
+            alert("Completa todos los campos obligatorios.");
+            return;
+        }
+        if (areaVal <= 0) {
+            alert("El área unitaria debe ser mayor a 0.");
             return;
         }
 
-        if (Number(formData.precio) <= 0 || Number(formData.area) <= 0) {
-            alert("El precio y el área deben ser mayores a 0.");
+        // Validación de certificación sostenible requerida
+        if (formData.es_sostenible === true && !formData.certificacion_sostenible) {
+            alert("Las viviendas sostenibles requieren especificar una certificación (EDGE, LEED, etc.).");
             return;
         }
+
+        // Validación de Foto (Máx 5MB y extensiones permitidas)
+        if (formData.foto instanceof File) {
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+            if (!allowedTypes.includes(formData.foto.type)) {
+                alert("Solo se permiten imágenes JPG, PNG o WEBP.");
+                return;
+            }
+            if (formData.foto.size > 5 * 1024 * 1024) {
+                alert("La fotografía no puede pesar más de 5MB.");
+                return;
+            }
+        }
+
+        // Restricción de rango MiVivienda (PEN y USD)
+        const TC = 3.75; // Tipo de cambio referencial
+        let precioEnSoles = precioVal;
+        if (formData.moneda === 'USD') {
+            precioEnSoles = precioVal * TC;
+        }
+
+        if (precioEnSoles < 68800 || precioEnSoles > 488800) {
+            const rangoMsg = formData.moneda === 'USD'
+                ? `$ ${(68800/TC).toLocaleString(undefined, {maximumFractionDigits: 0})} - $ ${(488800/TC).toLocaleString(undefined, {maximumFractionDigits: 0})}`
+                : 'S/ 68,800 - S/ 488,800';
+            if (!window.confirm(`El precio está fuera del rango del programa MiVivienda (${rangoMsg}). ¿Deseas continuar?`)) {
+                return;
+            }
+        }
+
+        // Mapeo: strings del frontend → códigos enteros del backend
+        const MONEDA_MAP = { PEN: 1, USD: 2 };
+        const MODALIDAD_MAP = { Compra: 1, Construccion: 2, Mejoramiento: 3 };
+        const TIPO_VENTA_MAP = { 'Primera venta': 1, 'Segunda venta': 2 };
+        const ESTADO_MAP = { Activo: 1, Inactivo: 2 };
 
         setLoading(true);
         try {
-            // Preparar payload con tipos correctos
             const unitPayload = {
                 direccion_unidad: formData.direccion,
                 distrito_unidad: formData.distrito,
-                area_unidad: parseFloat(formData.area),
-                precio_venta: parseFloat(formData.precio),
-                codigo_moneda: parseInt(formData.moneda),
-                codigo_estado: parseInt(formData.estado),
-                codigo_cliente: user?.id ? parseInt(user.id) : null,
-                codigo_prospecto: null,
-                codigo_asesor: null,
-                foto: formData.foto
+                area_unidad: areaVal,
+                precio_venta: precioVal,
+                codigo_moneda: MONEDA_MAP[formData.moneda] ?? 1,
+                codigo_modalidad: MODALIDAD_MAP[formData.modalidad_vivienda] ?? 1,
+                codigo_tipo_venta: formData.modalidad_vivienda === 'Compra'
+                    ? (TIPO_VENTA_MAP[formData.tipo_venta] ?? 1)
+                    : null,
+                es_sostenible: formData.es_sostenible,
+                certificacion_sostenible: formData.es_sostenible ? formData.certificacion_sostenible : null,
+                ahorro_energia: formData.ahorro_energia ? parseFloat(formData.ahorro_energia) : null,
+                ahorro_agua: formData.ahorro_agua ? parseFloat(formData.ahorro_agua) : null,
+                codigo_estado: ESTADO_MAP[formData.estado_registro] ?? 1,
+                foto: formData.foto,
+                remove_foto: fotoRemoved ? true : false,
             };
 
+            let response;
             if (editingId) {
-                console.log("PUT -> Actualizando unidad ID:", editingId, unitPayload);
-                await updateUnit(editingId, unitPayload);
-                alert("¡Propiedad actualizada exitosamente!");
+                response = await updateUnit(editingId, unitPayload);
             } else {
-                console.log("POST -> Creando nueva unidad:", unitPayload);
-                await createUnit(unitPayload);
-                alert("¡Propiedad registrada exitosamente!");
+                response = await createUnit(unitPayload);
             }
 
-            handleCancelEdit();
-            fetchProperties();
-
+            if (response.success) {
+                handleCancelEdit();
+                fetchProperties();
+                alert("Propiedad procesada con éxito.");
+            } else {
+                alert(`Error: ${response.error}`);
+            }
         } catch (error) {
-            console.error("Error en la operación:", error);
-
-            if (error.response && error.response.status === 422) {
-                // Capturar el detalle de validación del backend
-                const details = error.response.data.detail;
-                let errorMsg = "Error de validación en el servidor:\n";
-
-                if (Array.isArray(details)) {
-                    errorMsg += details.map(err => {
-                        const field = err.loc && err.loc.length > 1 ? err.loc[1] : err.loc[0];
-                        return `- Campo [${field}]: ${err.msg}`;
-                    }).join('\n');
-                } else {
-                    errorMsg += typeof details === 'string' ? details : JSON.stringify(details);
-                }
-
-                alert(errorMsg);
-            } else {
-                const msg = error.response?.data?.message || error.message;
-                alert(`Error al ${editingId ? 'actualizar' : 'registrar'}: ${msg}`);
-            }
+            console.error("Error al procesar propiedad:", error);
+            const msg = error.response?.data?.detail || "No pudimos guardar la propiedad. Verifica los datos e intenta de nuevo.";
+            alert(`Error: ${msg}`);
         } finally {
             setLoading(false);
         }
     };
 
-    return (
-        <div className="flex bg-gray-50 min-h-screen font-['Inter',_sans-serif]">
-            <Sidebar />
 
-            <main className="flex-1 p-12 overflow-y-auto">
-                <header className="mb-8">
-                    <h1 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">
-                        {editingId ? 'Editar Unidad Inmobiliaria' : 'Nueva Unidad Inmobiliaria'}
-                    </h1>
-                    <p className="text-gray-500 text-lg font-medium">
-                        {editingId ? 'Modifica los datos de la propiedad seleccionada.' : 'Ingresa los datos técnicos y financieros de la propiedad.'}
-                    </p>
+
+    return (
+        <div className="flex bg-[#F8FAFC] min-h-screen font-['Inter',_sans-serif]">
+            <Sidebar />
+            <main className="flex-1 p-6 overflow-y-auto">
+                <header className="mb-6">
+                    <h1 className="text-2xl font-black text-gray-900 mb-1 tracking-tight">Gestión del Inventario</h1>
+                    <p className="text-gray-500 text-sm font-medium">Registra y administra las unidades inmobiliarias.</p>
                 </header>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mb-16">
-
-                    {/* COLUMNA IZQUIERDA: Formulario de Datos */}
-                    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100">
-                        <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-4">
-                            <h2 className="text-xl font-black text-gray-900 flex items-center gap-3">
-                                <span className="bg-brand-blue/10 text-brand-blue p-2 rounded-xl">
-                                    <LocationOnIcon />
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-12 items-stretch">
+                    {/* FORMULARIO COMPACTO */}
+                    <div className="xl:col-span-2 bg-white p-4 rounded-[2rem] shadow-sm border border-gray-100">
+                        <div className="flex justify-between items-center mb-4 border-b border-gray-50 pb-3">
+                            <h2 className="text-lg font-black text-gray-900 flex items-center gap-2">
+                                <span className="bg-brand-blue/10 text-brand-blue p-1.5 rounded-xl">
+                                    <LocationOnIcon fontSize="small" />
                                 </span>
-                                Detalles de la Propiedad
+                                {editingId ? 'Editar Propiedad' : 'Nueva Unidad'}
                             </h2>
                             {editingId && (
-                                <button
-                                    onClick={handleCancelEdit}
-                                    className="text-xs font-bold text-red-500 hover:text-red-600 uppercase tracking-widest"
-                                >
-                                    Cancelar Edición
-                                </button>
+                                <button onClick={handleCancelEdit} className="text-[9px] font-black text-red-400 hover:text-red-500 uppercase tracking-widest px-3 py-1.5 bg-red-50 rounded-full transition-all">Cancelar</button>
                             )}
                         </div>
 
-                        <div className="space-y-6">
-                            {/* Dirección */}
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Dirección Exacta</label>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                            {/* DIRECCIÓN */}
+                            <div className="col-span-2">
+                                <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Dirección Exacta</label>
                                 <input
-                                    name="direccion"
-                                    value={formData.direccion}
-                                    onChange={handleChange}
-                                    type="text"
-                                    placeholder="Ej: Av. Javier Prado Oeste 123"
-                                    className="w-full bg-gray-50 border-none rounded-xl py-3.5 px-4 focus:ring-2 focus:ring-brand-blue font-bold text-gray-700 text-sm outline-none transition-all placeholder:text-gray-300"
+                                    name="direccion" value={formData.direccion} onChange={handleChange}
+                                    type="text" placeholder="Ej: Av. Principal 456"
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 focus:outline-none focus:border-blue-400 font-semibold text-gray-700 text-sm transition-all"
                                 />
                             </div>
 
-                            {/* Distrito */}
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Distrito</label>
-                                <div className="relative">
-                                    <button
-                                        type="button"
-                                        onClick={() => setOpenDistrito(!openDistrito)}
-                                        className="w-full bg-gray-50 border-none rounded-xl py-3.5 px-4 flex items-center justify-between focus:ring-2 focus:ring-brand-blue font-bold text-gray-700 text-sm outline-none transition-all cursor-pointer"
-                                    >
-                                        <span className={!formData.distrito ? 'text-gray-400' : ''}>
-                                            {formData.distrito || 'Seleccionar Distrito'}
-                                        </span>
-                                        <KeyboardArrowDownIcon className={`text-gray-400 transition-transform ${openDistrito ? 'rotate-180' : ''}`} />
-                                    </button>
+                            {/* DISTRITO + ESTADO */}
+                            <CustomSelect
+                                label="Distrito"
+                                value={formData.distrito}
+                                onChange={(val) => handleCustomChange('distrito', val)}
+                                showInfo={false}
+                                options={DISTRITOS_LIMA.map(d => ({ id: d, label: d }))}
+                            />
+                            <CustomSelect
+                                label="Estado"
+                                value={formData.estado_registro}
+                                onChange={(val) => handleCustomChange('estado_registro', val)}
+                                showInfo={true}
+                                options={[
+                                    { id: 'Activo', label: 'Activo' },
+                                    { id: 'Inactivo', label: 'Inactivo' }
+                                ]}
+                            />
 
-                                    {openDistrito && (
-                                        <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                            {['Miraflores', 'San Isidro', 'Santiago de Surco', 'La Molina', 'San Borja', 'Magdalena', 'Barranco'].map((dist) => (
-                                                <div
-                                                    key={dist}
-                                                    onClick={() => {
-                                                        handleChange({ target: { name: 'distrito', value: dist } });
-                                                        setOpenDistrito(false);
-                                                    }}
-                                                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer font-bold text-gray-700 text-sm transition-colors border-b border-gray-50 last:border-0"
-                                                >
-                                                    {dist}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
+                            {/* DIVISA + PRECIO */}
+                            <div>
+                                <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Precio de Venta</label>
+                                <div className="flex items-center bg-gray-50 border border-gray-100 rounded-xl h-10 overflow-hidden">
+                                    <div className="flex shrink-0 border-r border-gray-200 h-full">
+                                        {[{ id: 'PEN', symbol: 'S/' }, { id: 'USD', symbol: '$' }].map(cur => (
+                                            <button
+                                                key={cur.id}
+                                                type="button"
+                                                onClick={() => handleCustomChange('moneda', cur.id)}
+                                                style={formData.moneda === cur.id
+                                                    ? { background: '#3B82F6', color: 'white' }
+                                                    : { background: 'transparent', color: '#9ca3af' }
+                                                }
+                                                className="px-3 text-[11px] font-black h-full transition-all hover:opacity-80"
+                                            >
+                                                {cur.symbol}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <input
+                                        name="precio" value={formData.precio} onChange={handleChange}
+                                        type="number" placeholder="Ej: 180000"
+                                        min="0.01" step="0.01"
+                                        className="flex-1 bg-transparent h-full px-3 outline-none font-bold text-gray-700 text-sm"
+                                    />
                                 </div>
+                                {/* Rango MiVivienda */}
+                                <p className="text-[7px] font-medium text-gray-400 mt-1 ml-1">
+                                    Rango MiVivienda: S/ 68,800 - S/ 488,800 {formData.moneda === 'USD' && '(USD 18,347 - USD 130,347 aprox.)'}
+                                </p>
+                                {formData.precio !== '' && (() => {
+                                    const TC = 3.75;
+                                    const precioVal = parseFloat(formData.precio);
+                                    const precioSoles = formData.moneda === 'USD' ? precioVal * TC : precioVal;
+
+                                    if (precioSoles < 68800) {
+                                        return <p className="text-[7px] font-semibold text-red-500 ml-1">⚠ Precio menor al mínimo (S/ 68,800)</p>;
+                                    }
+                                    if (precioSoles > 488800) {
+                                        return <p className="text-[7px] font-semibold text-red-500 ml-1">⚠ Precio mayor al máximo (S/ 488,800)</p>;
+                                    }
+
+                                    let rango = '';
+                                    if (precioSoles <= 97800) rango = 'R1';
+                                    else if (precioSoles <= 146900) rango = 'R2';
+                                    else if (precioSoles <= 244600) rango = 'R3';
+                                    else if (precioSoles <= 362100) rango = 'R4';
+                                    else rango = 'R5';
+
+                                    return (
+                                        <p className="text-[7px] font-semibold text-green-600 ml-1">
+                                            ✓ Rango {rango} {formData.moneda === 'USD' && `(≈ S/ ${precioSoles.toLocaleString(undefined, {maximumFractionDigits: 0})})`}
+                                        </p>
+                                    );
+                                })()}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-6">
-                                {/* Precio */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Precio</label>
-                                    <div className="relative">
-                                        <button
-                                            type="button"
-                                            onClick={() => setOpenMoneda(!openMoneda)}
-                                            className="absolute inset-y-0 left-0 flex items-center pl-4 cursor-pointer z-20 focus:outline-none"
-                                        >
-                                            <span className="text-gray-900 font-black text-xs mr-1">{formData.moneda === '1' ? 'S/.' : '$'}</span>
-                                            <KeyboardArrowDownIcon style={{ fontSize: 16 }} className={`text-gray-400 transition-transform ${openMoneda ? 'rotate-180' : ''}`} />
-                                        </button>
+                            {/* ÁREA */}
+                            <div>
+                                <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Área (m²)</label>
+                                <div className={`bg-gray-50 border rounded-xl h-10 flex items-center transition-all ${formData.area !== '' && parseFloat(formData.area) <= 0
+                                    ? 'border-red-300 bg-red-50'
+                                    : 'border-gray-100'
+                                    }`}>
+                                    <input
+                                        name="area" value={formData.area}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val === '' || parseFloat(val) > 0 || val === '0' || val === '0.') {
+                                                handleChange(e);
+                                            }
+                                        }}
+                                        type="number" placeholder="Ej: 85.5"
+                                        min="0.01" step="0.01"
+                                        className="w-full bg-transparent h-full px-4 outline-none font-bold text-gray-700 text-sm"
+                                    />
+                                    <span className="pr-3 text-[10px] font-black text-gray-300">m²</span>
+                                </div>
+                                {formData.area !== '' && parseFloat(formData.area) <= 0 && (
+                                    <p className="text-[7px] text-red-400 font-semibold mt-1 ml-1">El área debe ser mayor a 0</p>
+                                )}
+                            </div>
 
-                                        {openMoneda && (
-                                            <div className="absolute top-full left-0 mt-2 w-16 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                                <div
-                                                    onClick={() => { handleChange({ target: { name: 'moneda', value: '1' } }); setOpenMoneda(false); }}
-                                                    className={`px-2 py-2 hover:bg-gray-50 cursor-pointer font-black text-sm text-center border-b border-gray-50 ${formData.moneda === '1' ? 'text-brand-blue bg-blue-50' : 'text-gray-700'}`}
-                                                >
-                                                    S/.
-                                                </div>
-                                                <div
-                                                    onClick={() => { handleChange({ target: { name: 'moneda', value: '2' } }); setOpenMoneda(false); }}
-                                                    className={`px-2 py-2 hover:bg-gray-50 cursor-pointer font-black text-sm text-center ${formData.moneda === '2' ? 'text-brand-blue bg-blue-50' : 'text-gray-700'}`}
-                                                >
-                                                    $
-                                                </div>
-                                            </div>
+                            {/* SOSTENIBLE */}
+                            <div className="col-span-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1 flex items-center gap-1.5">
+                                    Tipo de Vivienda
+                                    <Tooltip
+                                        title="Define si la vivienda aplica al Bono Buen Pagador (BBP) del Fondo MiVivienda y de qué tipo."
+                                        arrow placement="top" enterDelay={150}
+                                        componentsProps={{
+                                            tooltip: { sx: { bgcolor: 'white', color: '#334155', border: '1px solid #e2e8f0', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', fontSize: '12px', fontWeight: 500, lineHeight: 1.6, px: 2, py: 1.5, borderRadius: '14px', maxWidth: 240 } },
+                                            arrow: { sx: { color: 'white', '&::before': { border: '1px solid #e2e8f0' } } },
+                                        }}
+                                    >
+                                        <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#EFF6FF', border: '1.5px solid #93C5FD', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                            <span style={{ fontSize: 9, fontWeight: 700, color: '#3B82F6', lineHeight: 1 }}>?</span>
+                                        </span>
+                                    </Tooltip>
+                                </label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { label: 'Sin BBP', val: null, color: 'gray' },
+                                        { label: 'Tradicional', val: false, color: 'blue' },
+                                        { label: 'Sostenible', val: true, color: 'green' },
+                                    ].map((op) => {
+                                        const isActive =
+                                            op.val === null
+                                                ? formData.es_sostenible === null || formData.es_sostenible === undefined
+                                                : formData.es_sostenible === op.val;
+                                        const activeStyle = {
+                                            gray: isActive ? 'border-gray-400 bg-gray-50 text-gray-600' : 'border-gray-100 text-gray-300 hover:border-gray-300',
+                                            blue: isActive ? 'border-brand-blue bg-blue-50 text-brand-blue' : 'border-gray-100 text-gray-300 hover:border-blue-200',
+                                            green: isActive ? 'border-green-400 bg-green-50 text-green-600' : 'border-gray-100 text-gray-300 hover:border-green-200',
+                                        }[op.color];
+                                        return (
+                                            <button
+                                                key={op.label}
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, es_sostenible: op.val ?? false }))}
+                                                className={`py-2 px-2 rounded-xl border-2 transition-all duration-200 text-center ${activeStyle}`}
+                                            >
+                                                <span className="text-[10px] font-black uppercase tracking-wider">{op.label}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                {/* Campo certificación solo si es sostenible */}
+                                {formData.es_sostenible === true && (
+                                    <div className="mt-3 animate-in fade-in duration-300 space-y-2">
+                                        <CustomSelect
+                                            label="Certificación Sostenible"
+                                            value={formData.certificacion_sostenible}
+                                            onChange={(val) => handleCustomChange('certificacion_sostenible', val)}
+                                            showInfo={true}
+                                            options={[
+                                                { id: 'EDGE', label: 'EDGE' },
+                                                { id: 'LEED', label: 'LEED' },
+                                                { id: 'Bono Verde', label: 'Bono Verde MiVivienda' },
+                                                { id: 'ISO 14001', label: 'ISO 14001' }
+                                            ]}
+                                        />
+                                        {!formData.certificacion_sostenible && (
+                                            <p className="text-[8px] font-semibold text-red-400 ml-1">⚠ Requerido para vivienda sostenible</p>
                                         )}
 
-                                        <input
-                                            name="precio"
-                                            value={formData.precio}
-                                            onChange={handleChange}
-                                            type="number"
-                                            min="0"
-                                            placeholder="0"
-                                            className="w-full bg-gray-50 border-none rounded-xl py-3.5 pl-20 pr-4 focus:ring-2 focus:ring-brand-blue font-black text-gray-900 text-right text-sm outline-none transition-all placeholder:text-gray-300"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Área */}
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Área Total</label>
-                                    <div className="relative">
-                                        <input
-                                            name="area"
-                                            value={formData.area}
-                                            onChange={handleChange}
-                                            type="number"
-                                            min="0"
-                                            placeholder="0"
-                                            className="w-full bg-gray-50 border-none rounded-xl py-3.5 pl-4 pr-10 focus:ring-2 focus:ring-brand-blue font-black text-gray-900 text-right text-sm outline-none transition-all placeholder:text-gray-300"
-                                        />
-                                        <span className="absolute right-4 top-3.5 text-gray-400 font-bold text-xs">m²</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Estado */}
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Estado</label>
-                                <div className="relative">
-                                    <button
-                                        type="button"
-                                        onClick={() => setOpenEstado(!openEstado)}
-                                        className="w-full bg-gray-50 border-none rounded-xl py-3.5 px-4 flex items-center justify-between focus:ring-2 focus:ring-brand-blue font-bold text-gray-700 text-sm outline-none transition-all cursor-pointer"
-                                    >
-                                        <span>
-                                            {formData.estado === '1' ? 'Activo' :
-                                                formData.estado === '2' ? 'Inactivo' : 'Seleccionar'}
-                                        </span>
-                                        <KeyboardArrowDownIcon className={`text-gray-400 transition-transform ${openEstado ? 'rotate-180' : ''}`} />
-                                    </button>
-
-                                    {openEstado && (
-                                        <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                                            {[
-                                                { id: '1', label: 'Activo' },
-                                                { id: '2', label: 'Inactivo' }
-                                            ].map((option) => (
-                                                <div
-                                                    key={option.id}
-                                                    onClick={() => {
-                                                        handleChange({ target: { name: 'estado', value: option.id } });
-                                                        setOpenEstado(false);
-                                                    }}
-                                                    className="px-4 py-3 hover:bg-gray-50 cursor-pointer font-bold text-gray-700 text-sm transition-colors border-b border-gray-50 last:border-0"
-                                                >
-                                                    {option.label}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* COLUMNA DERECHA: Fotografía / Multimedia */}
-                    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 flex flex-col h-full min-h-[400px]">
-                        <h2 className="text-xl font-black text-gray-900 mb-8 border-b border-gray-100 pb-4">Fotografía Principal</h2>
-
-                        <div className="flex-1 flex flex-col">
-                            <label className={`
-                                flex-1 w-full bg-gray-50 rounded-3xl border-3 border-dashed border-gray-200 
-                                hover:border-brand-blue hover:bg-brand-blue/5 transition-all cursor-pointer 
-                                flex flex-col items-center justify-center relative overflow-hidden group
-                                ${!preview ? 'p-8' : 'p-0 border-none'}
-                            `}>
-                                {preview ? (
-                                    <>
-                                        <img src={preview} alt="Vista previa" className="w-full h-full object-cover rounded-3xl" />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <span className="text-white font-bold bg-black/50 px-6 py-2 rounded-full text-sm backdrop-blur-sm">Cambiar Foto</span>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="text-center space-y-3">
-                                        <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto text-brand-blue group-hover:scale-110 transition-transform">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8">
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-gray-600 text-base">Sube una foto portada</p>
-                                            <p className="text-xs text-gray-400 mt-1">PNG, JPG hasta 10MB</p>
+                                        {/* Campos opcionales de ahorro - inline */}
+                                        <div className="flex gap-3 items-end">
+                                            <div className="flex-1">
+                                                <label className="block text-[7px] font-bold text-gray-400 uppercase mb-0.5 ml-1">Ahorro Energía (%)</label>
+                                                <input
+                                                    name="ahorro_energia"
+                                                    value={formData.ahorro_energia}
+                                                    onChange={handleChange}
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.1"
+                                                    placeholder="Opcional"
+                                                    className="w-full bg-gray-50 border border-gray-100 rounded-lg py-1.5 px-2 text-xs font-semibold text-gray-700 focus:outline-none focus:border-green-400"
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <label className="block text-[7px] font-bold text-gray-400 uppercase mb-0.5 ml-1">Ahorro Agua (%)</label>
+                                                <input
+                                                    name="ahorro_agua"
+                                                    value={formData.ahorro_agua}
+                                                    onChange={handleChange}
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.1"
+                                                    placeholder="Opcional"
+                                                    className="w-full bg-gray-50 border border-gray-100 rounded-lg py-1.5 px-2 text-xs font-semibold text-gray-700 focus:outline-none focus:border-green-400"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 )}
-                                <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                            </label>
+                            </div>
+
+
+                            {/* MODALIDAD + TIPO VENTA */}
+                            <div>
+                                <CustomSelect
+                                    label="Modalidad"
+                                    value={formData.modalidad_vivienda}
+                                    onChange={(val) => handleCustomChange('modalidad_vivienda', val)}
+                                    showInfo={true}
+                                    options={[{ id: 'Compra', label: 'Compra' }, { id: 'Construccion', label: 'Construcción' }, { id: 'Mejoramiento', label: 'Mejoramiento' }]}
+                                />
+                                {/* Info cuota inicial mínima */}
+                                <div className="mt-1.5 flex items-center gap-1.5 ml-1">
+                                    <InfoOutlinedIcon sx={{ fontSize: 10, color: '#94a3b8' }} />
+                                    <span className="text-[7px] font-semibold text-gray-400">
+                                        Cuota inicial mín: {formData.modalidad_vivienda === 'Compra' ? '10%' : '7.5%'} del precio
+                                    </span>
+                                </div>
+                                {formData.modalidad_vivienda === 'Mejoramiento' && (
+                                    <p className="text-[7px] text-amber-500 font-semibold mt-1 ml-1">⚠ Mejoramiento no aplica a BBP</p>
+                                )}
+                            </div>
+                            {formData.modalidad_vivienda === 'Compra' ? (
+                                <CustomSelect
+                                    label="Tipo de Venta"
+                                    value={formData.tipo_venta}
+                                    onChange={(val) => handleCustomChange('tipo_venta', val)}
+                                    showInfo={true}
+                                    options={[{ id: 'Primera venta', label: 'Primera venta' }, { id: 'Segunda venta', label: 'Segunda venta' }]}
+                                />
+                            ) : (
+                                <div className="flex items-center justify-center bg-gray-50 rounded-2xl border border-dashed border-gray-200 p-3">
+                                    <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">No aplica</span>
+                                </div>
+                            )}
+
+                            {/* Aviso BBP Segunda Venta */}
+                            {formData.tipo_venta === 'Segunda venta' && (
+                                <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2 animate-in fade-in duration-300">
+                                    <span className="text-amber-500 text-sm">⚠</span>
+                                    <p className="text-[9px] font-semibold text-amber-700">
+                                        <strong>Aviso:</strong> Las viviendas de segunda venta NO califican para el Bono del Buen Pagador (BBP) según normativa FMV.
+                                    </p>
+                                </div>
+                            )}
                         </div>
+
+                        <button
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className={`
+                                w-full bg-brand-dark text-white font-black py-3 mt-6 rounded-xl shadow-lg
+                                hover:bg-black hover:-translate-y-0.5 transition-all active:scale-95 flex items-center justify-center gap-2 text-xs
+                                ${loading ? 'opacity-70 cursor-wait' : ''}
+                            `}
+                        >
+                            {loading ? 'Procesando...' : (editingId ? 'GUARDAR CAMBIOS' : 'REGISTRAR PROPIEDAD')}
+                        </button>
+                    </div>
+
+                    {/* FOTO / DROPZONE */}
+                    <div className="relative group h-full">
+                        <label className={`
+                            h-full min-h-[300px] w-full bg-white rounded-[2rem] border-2 border-dashed border-gray-100
+                            hover:border-brand-blue hover:bg-brand-blue/[0.02] transition-all cursor-pointer
+                            flex flex-col items-center justify-center overflow-hidden
+                            ${preview ? 'border-solid p-0' : 'p-6'}
+                        `}>
+                            {preview ? (
+                                <>
+                                    <img src={preview} alt="Vista previa" className="w-full h-full object-cover rounded-[1.8rem]" />
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white duration-300 rounded-[1.8rem]">
+                                        <CloudUploadOutlinedIcon sx={{ fontSize: 32, mb: 1 }} />
+                                        <span className="font-black text-xs bg-white/20 px-6 py-2 rounded-full backdrop-blur-md">Cambiar Foto</span>
+                                    </div>
+                                    {/* Botón eliminar foto */}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setPreview(null);
+                                            setFotoRemoved(true);
+                                            setFormData(prev => ({ ...prev, foto: null }));
+                                        }}
+                                        className="absolute top-3 right-3 z-10 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                                        title="Eliminar foto"
+                                    >
+                                        <span style={{ fontSize: 16, fontWeight: 900, lineHeight: 1 }}>×</span>
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="text-center">
+                                    <div className="w-16 h-16 bg-brand-blue/5 rounded-full flex items-center justify-center mx-auto text-brand-blue mb-4">
+                                        <CloudUploadOutlinedIcon sx={{ fontSize: 24 }} />
+                                    </div>
+                                    <h3 className="font-black text-gray-900 text-sm mb-1">Cargar Fotografía</h3>
+                                    <p className="text-gray-400 font-medium text-[10px]">Arrastra o haz clic aquí</p>
+                                </div>
+                            )}
+                            <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                        </label>
                     </div>
                 </div>
 
-                <div className="mt-12 flex justify-center">
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className={`
-                                w-full bg-brand-green hover:bg-green-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-green-500/20 
-                                transition-all hover:scale-105 active:scale-95 text-base flex items-center justify-center gap-2
-                                ${loading ? 'opacity-70 cursor-wait' : ''}
-                            `}
-                    >
-                        {loading ? (editingId ? 'Guardando...' : 'Registrando...') : (editingId ? 'Guardar Cambios' : 'Registrar Propiedad')}
-                    </button>
-                </div>
+                {/* LISTADO DE PROPIEDADES MEJORADO */}
+                <div className="border-t border-gray-100 pt-10">
+                    <div className="flex justify-between items-center mb-5">
+                        <div>
+                            <h2 className="text-lg font-black text-gray-900 tracking-tight">Inventario Actual</h2>
+                            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-0.5">{properties.length} unidades encontradas</p>
+                        </div>
+                        <div className="flex gap-4">
+                            {/* Aquí podrían ir filtros en el futuro */}
+                        </div>
+                    </div>
 
-                {/* LISTA DE PROPIEDADES */}
-                <div className="border-t border-gray-200 mt-16 pt-8">
-                    <h2 className="text-2xl font-black text-gray-900 mb-6">Propiedades Registradas</h2>
                     {properties.length === 0 ? (
-                        <div className="text-center py-12 bg-white rounded-[2rem] border border-gray-100">
-                            <p className="text-gray-400 font-medium">No hay propiedades registradas aún.</p>
+                        <div className="text-center py-20 bg-white rounded-[3rem] border border-gray-50 shadow-sm">
+                            <p className="text-gray-300 font-black text-xl">Sin registros en el sistema.</p>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                             {properties.map((prop) => (
-                                <div key={prop.codigo_unidad} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
-                                    <div className="h-48 bg-gray-100 relative overflow-hidden">
+                                <div key={prop.codigo_unidad} className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 group">
+                                    <div className="h-56 bg-gray-100 relative overflow-hidden">
                                         {prop.foto ? (
-                                            <img src={`http://localhost:8000${prop.foto}`} alt={prop.direccion_unidad} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                            <img src={`http://localhost:8000${prop.foto}`} alt={prop.direccion_unidad} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                                <LocationOnIcon style={{ fontSize: 40 }} />
+                                            <div className="w-full h-full flex items-center justify-center text-gray-200">
+                                                <LocationOnIcon sx={{ fontSize: 60 }} />
                                             </div>
                                         )}
-                                        <div className="absolute top-3 right-3">
-                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${prop.codigo_estado === 1 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                {prop.codigo_estado === 1 ? 'Activo' : 'Inactivo'}
+                                        <div className="absolute top-4 left-4 flex flex-col gap-2">
+                                            {(() => {
+                                                const isActivo = prop.codigo_estado === 1;
+                                                return (
+                                                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg backdrop-blur-md ${isActivo ? 'bg-green-500/90 text-white' : 'bg-red-500/90 text-white'}`}>
+                                                        {isActivo ? 'Activo' : 'Inactivo'}
+                                                    </span>
+                                                );
+                                            })()}
+                                            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg backdrop-blur-md ${prop.es_sostenible ? 'bg-emerald-500/90 text-white' : 'bg-gray-500/90 text-white'}`}>
+                                                {prop.es_sostenible ? 'Sostenible' : 'Tradicional'}
                                             </span>
                                         </div>
                                     </div>
-                                    <div className="p-5">
-                                        <h3 className="font-bold text-gray-900 text-lg mb-1 truncate">{prop.distrito_unidad}</h3>
-                                        <p className="text-gray-500 text-xs mb-4 truncate">{prop.direccion_unidad}</p>
+                                    <div className="p-8">
+                                        <div className="mb-6">
+                                            <h3 className="font-black text-gray-900 text-xl mb-1 group-hover:text-brand-blue transition-colors truncate">{prop.distrito_unidad}</h3>
+                                            <p className="text-gray-400 text-xs font-bold uppercase tracking-tighter truncate">{prop.direccion_unidad}</p>
+                                        </div>
 
-                                        <div className="flex items-center justify-between pt-4 border-t border-gray-50">
-                                            <div>
-                                                <span className="block text-xs font-bold text-gray-300 uppercase">Precio</span>
-                                                <span className="font-black text-brand-blue">
-                                                    {prop.codigo_moneda === 1 ? 'S/.' : '$'} {prop.precio_venta}
+                                        <div className="flex items-center justify-between mb-4 p-3 bg-gray-50/50 rounded-2xl border border-gray-50">
+                                            <div className="text-center flex-1 border-r border-gray-100">
+                                                <span className="block text-[8px] font-black text-gray-300 uppercase mb-1">Precio</span>
+                                                <span className="font-black text-brand-blue text-sm">
+                                                    {prop.codigo_moneda === 2 ? '$' : 'S/'} {prop.precio_venta?.toLocaleString()}
                                                 </span>
                                             </div>
-                                            <div className="text-right">
-                                                <span className="block text-xs font-bold text-gray-300 uppercase">Área</span>
-                                                <span className="font-bold text-gray-700">{prop.area_unidad} m²</span>
+                                            <div className="text-center flex-1">
+                                                <span className="block text-[8px] font-black text-gray-300 uppercase mb-1">Área</span>
+                                                <span className="font-black text-gray-700 text-sm">{prop.area_unidad} m²</span>
                                             </div>
                                         </div>
-                                        <div className="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center">
-                                            <button
-                                                onClick={() => handleDelete(prop.codigo_unit || prop.codigo_unidad)}
-                                                className="text-[10px] font-bold text-red-300 hover:text-red-500 uppercase tracking-widest transition-colors"
-                                            >
-                                                Eliminar
-                                            </button>
+
+
+
+                                        <div className="flex gap-3">
                                             <button
                                                 onClick={() => handleEdit(prop)}
-                                                className="text-xs font-bold text-brand-blue hover:text-blue-700 uppercase tracking-widest flex items-center gap-1 transition-colors"
+                                                className="flex-1 bg-brand-blue/5 text-brand-blue font-black py-3 rounded-xl hover:bg-brand-blue hover:text-white transition-all text-[10px] uppercase tracking-widest flex items-center justify-center gap-2"
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3 h-3">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                                                </svg>
-                                                Editar
+                                                <EditOutlinedIcon sx={{ fontSize: 16 }} /> Editar
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(prop.codigo_unit || prop.codigo_unidad)}
+                                                className="w-12 h-12 bg-red-50 text-red-300 hover:bg-red-500 hover:text-white flex items-center justify-center rounded-xl transition-all"
+                                            >
+                                                <DeleteOutlineIcon sx={{ fontSize: 20 }} />
                                             </button>
                                         </div>
                                     </div>
@@ -478,7 +658,7 @@ const PropertyRegistrationPage = () => {
                     )}
                 </div>
             </main>
-        </div>
+        </div >
     );
 };
 
