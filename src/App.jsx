@@ -1,16 +1,13 @@
-// src/App.jsx
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import LoginPage from './pages/LoginPage';     // Asegúrate que estos sean .jsx también
-import RegisterPage from './pages/RegisterPage'; // Asegúrate que estos sean .jsx también
-
-// Componente temporal para probar el acceso
-const Dashboard = () => (
-  <div className="p-10">
-    <h1 className="text-3xl font-bold text-brand-blue">Dashboard</h1>
-    <p>¡Bienvenido! Has iniciado sesión correctamente.</p>
-  </div>
-);
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import PropertyRegistrationPage from './pages/PropertyRegistrationPage';
+import SimulationPage from './pages/SimulationPage';
+import ClientDashboard from './pages/ClientDashboard';
+import ProfilePage from './pages/ProfilePage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
   return (
@@ -24,8 +21,20 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
-          {/* Ruta que debería ser privada (luego le pondremos el candado) */}
-          <Route path="/dashboard" element={<Dashboard />} />
+          {/* Rutas Privadas - Cliente */}
+          <Route path="/cliente/dashboard" element={<ClientDashboard />} />
+          <Route path="/dashboard/client" element={<ClientDashboard />} />
+          <Route path="/simulation" element={<SimulationPage />} />
+          <Route path="/simulation/:id" element={<SimulationPage />} />
+          <Route path="/simulador" element={<SimulationPage />} />
+          <Route path="/perfil" element={<ProfilePage />} />
+          <Route path="/configuracion" element={<SettingsPage />} />
+
+          {/* Rutas Privadas - Asesor / Admin */}
+          <Route path="/dashboard" element={<PropertyRegistrationPage />} />
+          <Route path="/propiedades" element={<PropertyRegistrationPage />} />
+          <Route path="/property/register" element={<PropertyRegistrationPage />} />
+          <Route path="/clientes" element={<PropertyRegistrationPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
