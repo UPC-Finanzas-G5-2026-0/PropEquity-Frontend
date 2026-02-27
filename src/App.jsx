@@ -8,6 +8,7 @@ import SimulationPage from './pages/SimulationPage';
 import ClientDashboard from './pages/ClientDashboard';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
+import AdvisorDashboard from "./pages/AdvisorDashboard";
 
 function App() {
   return (
@@ -31,10 +32,16 @@ function App() {
           <Route path="/configuracion" element={<SettingsPage />} />
 
           {/* Rutas Privadas - Asesor / Admin */}
-          <Route path="/dashboard" element={<PropertyRegistrationPage />} />
+          <Route path="/asesor/dashboard" element={<AdvisorDashboard />} />
+          {/* ¡CORREGIDO! Mi Cartera ahora abre el panel del Asesor */}
+          <Route path="/clientes" element={<AdvisorDashboard />} />
+
+          {/* Rutas de Propiedades (Unidades Inmobiliarias) */}
           <Route path="/propiedades" element={<PropertyRegistrationPage />} />
           <Route path="/property/register" element={<PropertyRegistrationPage />} />
-          <Route path="/clientes" element={<PropertyRegistrationPage />} />
+
+          {/* Ruta fallback para el dashboard genérico */}
+          <Route path="/dashboard" element={<AdvisorDashboard />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
