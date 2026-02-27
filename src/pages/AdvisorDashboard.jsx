@@ -5,6 +5,7 @@ import CalculateIcon from '@mui/icons-material/Calculate';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import EditIcon from '@mui/icons-material/Edit';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import { Tooltip } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { getClients } from '../services/clientService';
 import { useNavigate } from 'react-router-dom';
@@ -157,20 +158,23 @@ const AdvisorDashboard = () => {
                       <td className="px-6 py-4 text-sm font-bold text-green-600">{formatCurrency(client.ingreso_mensual || 0)}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => handleOpenForm(client)}
-                            className="p-2 rounded-lg bg-orange-50 text-brand-orange hover:bg-orange-100 transition-colors"
-                            title="Editar Cliente"
-                          >
-                            <EditIcon fontSize="small" />
-                          </button>
-                          <button
-                            onClick={() => navigate(`/simulations/client/${client.codigo_cliente}`)}
-                            className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                            title="Ver Simulaciones"
-                          >
-                            <VisibilityIcon fontSize="small" />
-                          </button>
+                          <Tooltip title="Editar datos del cliente" arrow placement="top">
+                            <button
+                              onClick={() => handleOpenForm(client)}
+                              className="p-2 rounded-lg bg-orange-50 text-brand-orange hover:bg-orange-100 transition-colors"
+                            >
+                              <EditIcon fontSize="small" />
+                            </button>
+                          </Tooltip>
+
+                          <Tooltip title="Ver simulaciones hipotecarias de este cliente" arrow placement="top">
+                            <button
+                              onClick={() => navigate(`/simulations/client/${client.codigo_cliente}`)}
+                              className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                            >
+                              <VisibilityIcon fontSize="small" />
+                            </button>
+                          </Tooltip>
                         </div>
                       </td>
                     </tr>
