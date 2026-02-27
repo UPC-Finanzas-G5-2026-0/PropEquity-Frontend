@@ -8,6 +8,7 @@ import SimulationPage from './pages/SimulationPage';
 import ClientDashboard from './pages/ClientDashboard';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
+import AdvisorDashboard from "./pages/AdvisorDashboard";
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
           <Route path="/configuracion" element={<SettingsPage />} />
 
           {/* Rutas Privadas - Asesor / Admin */}
+          <Route path="/asesor/dashboard" element={<AdvisorDashboard />} />
           <Route path="/dashboard" element={<PropertyRegistrationPage />} />
           <Route path="/propiedades" element={<PropertyRegistrationPage />} />
           <Route path="/property/register" element={<PropertyRegistrationPage />} />

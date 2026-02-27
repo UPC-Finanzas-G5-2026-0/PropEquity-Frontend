@@ -4,70 +4,83 @@ import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.jpeg';
 
 const Sidebar = () => {
-    const { logout, user } = useAuth();
-    const navigate = useNavigate();
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
 
-    // Roles: Administrador, Asesor, Cliente
-    const allMenuItems = [
-        { name: 'Inicio', path: user?.role === 'Cliente' ? '/cliente/dashboard' : '/dashboard', roles: ['Administrador', 'Asesor', 'Cliente'] },
-        { name: 'Propiedades', path: '/propiedades', roles: ['Administrador', 'Asesor', 'Cliente'] },
-        { name: 'Simulaciones', path: '/simulador', roles: ['Administrador', 'Cliente'] },
-        // Nota: 'Clientes' (lista de usuarios) solo para admins/asesores
-        { name: 'Clientes', path: '/clientes', roles: ['Administrador', 'Asesor'] },
-        { name: 'Mi Perfil', path: '/perfil', roles: ['Cliente'] },
-        { name: 'Configuración', path: '/configuracion', roles: ['Administrador', 'Asesor', 'Cliente'] },
-    ];
+  // 1. Normalizamos el rol a minúsculas para evitar fallos por mayúsculas
+  const currentRole = (user?.role || user?.rol || '').toLowerCase();
 
-    const menuItems = allMenuItems.filter(item => item.roles.includes(user?.role));
+  // 2. Función para asignar la ruta correcta del Dashboard según el rol
+  const getHomePath = (role) => {
+    switch (role) {
+      case 'administrador': return '/admin/dashboard';
+      case 'asesor': return '/asesor/dashboard';
+      case 'cliente': return '/cliente/dashboard';
+      default: return '/';
+    }
+  };
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
+  // 3. Definimos el menú (nota que los roles ahora están en minúsculas)
+  const allMenuItems = [
+    { name: 'Inicio', path: getHomePath(currentRole), roles: ['administrador', 'asesor', 'cliente'] },
+    { name: 'Propiedades', path: '/propiedades', roles: ['administrador', 'asesor', 'cliente'] },
+    { name: 'Simulaciones', path: '/simulador', roles: ['administrador', 'asesor', 'cliente'] }, // ¡Añadimos al asesor aquí!
+    { name: 'Mi Cartera', path: '/clientes', roles: ['administrador', 'asesor'] }, // Le cambié el nombre para que suene más profesional para el asesor
+    { name: 'Mi Perfil', path: '/perfil', roles: ['cliente', 'asesor'] },
+    { name: 'Configuración', path: '/configuracion', roles: ['administrador', 'asesor', 'cliente'] },
+  ];
 
-    return (
-        <aside className="w-64 bg-brand-dark h-screen sticky top-0 flex flex-col p-6 text-white shrink-0 overflow-y-auto">
-            <div className="mb-10 mt-4 px-4 flex flex-col items-center text-center gap-4">
-                <img
-                    src={logo}
-                    alt="PropEquity Logo"
-                    className="w-20 h-20 rounded-2xl object-cover shadow-sm border border-white/10"
-                />
-                <div className="text-2xl font-bold tracking-wide">
-                    PropEquity
-                </div>
-            </div>
+  // Filtramos los ítems exactos para el rol del usuario que inició sesión
+  const menuItems = allMenuItems.filter(item => item.roles.includes(currentRole));
 
-            <nav className="flex-1">
-                <ul className="space-y-2">
-                    {menuItems.map((item) => (
-                        <li key={item.name}>
-                            <NavLink
-                                to={item.path}
-                                className={({ isActive }) =>
-                                    `block py-2.5 px-4 rounded-lg text-lg transition-colors font-medium ${isActive
-                                        ? 'bg-white/10 text-white'
-                                        : 'text-gray-400 hover:text-white hover:bg-white/5'
-                                    }`
-                                }
-                            >
-                                {item.name}
-                            </NavLink>
-                        </li>
-                    ))}
-                </ul>
-            </nav>
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
-            <div className="mt-auto pt-6 border-t border-white/10">
-                <button
-                    onClick={handleLogout}
-                    className="w-full text-left py-3 px-4 rounded-lg text-lg text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors font-medium"
-                >
-                    Cerrar Sesión
-                </button>
-            </div>
-        </aside>
-    );
+  return (
+    <aside className="w-64 bg-brand-dark h-screen sticky top-0 flex flex-col p-6 text-white shrink-0 overflow-y-auto">
+      <div className="mb-10 mt-4 px-4 flex flex-col items-center text-center gap-4">
+        <img
+          src={logo}
+          alt="PropEquity Logo"
+          className="w-20 h-20 rounded-2xl object-cover shadow-sm border border-white/10"
+        />
+        <div className="text-2xl font-bold tracking-wide">
+          PropEquity
+        </div>
+      </div>
+
+      <nav className="flex-1">
+        <ul className="space-y-2">
+          {menuItems.map((item) => (
+            <li key={item.name}>
+              <NavLink
+                to={item.path}
+                className={({ isActive }) =>
+                  `block py-2.5 px-4 rounded-lg text-lg transition-colors font-medium ${isActive
+                    ? 'bg-white/10 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`
+                }
+              >
+                {item.name}
+              </NavLink>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <div className="mt-auto pt-6 border-t border-white/10">
+        <button
+          onClick={handleLogout}
+          className="w-full text-left py-3 px-4 rounded-lg text-lg text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors font-medium"
+        >
+          Cerrar Sesión
+        </button>
+      </div>
+    </aside>
+  );
 };
 
 export default Sidebar;
