@@ -1,5 +1,25 @@
 import api from './api';
 
+// Función Detective para procesar errores 422 de FastAPI
+const extractFastAPIError = (error, defaultMessage = 'Error en la operación') => {
+    const errorDetail = error.response?.data?.detail;
+
+    // Si FastAPI devuelve un array de errores (Error 422 típico de validación)
+    if (Array.isArray(errorDetail)) {
+        return "El servidor rechazó estos campos: " + errorDetail.map(e => {
+            // e.loc suele ser ["body", "precio_venta"]
+            const fieldName = e.loc[e.loc.length - 1];
+            return `'${fieldName}' -> ${e.msg}`;
+        }).join(' | ');
+    }
+    // Si FastAPI devuelve un string simple (Tus validaciones manuales)
+    else if (typeof errorDetail === 'string') {
+        return errorDetail;
+    }
+
+    return defaultMessage;
+};
+
 // Listar unidades disponibles
 export const getUnits = async (skip = 0, limit = 100) => {
     try {
@@ -28,16 +48,7 @@ export const createUnitJSON = async (unitData) => {
         const response = await api.post('/units/json', unitData);
         return { success: true, data: response.data };
     } catch (error) {
-        const errorDetail = error.response?.data?.detail;
-        let errorMessage = 'Error al crear la unidad';
-
-        if (typeof errorDetail === 'string') {
-            errorMessage = errorDetail;
-        } else if (Array.isArray(errorDetail)) {
-            errorMessage = errorDetail.map(e => e.msg).join(', ');
-        }
-
-        return { success: false, error: errorMessage };
+        return { success: false, error: extractFastAPIError(error, 'Error al crear la unidad') };
     }
 };
 
@@ -46,38 +57,28 @@ export const createUnitWithImage = async (unitData, imageFile) => {
     try {
         const formData = new FormData();
 
-        // Agregar todos los campos
+        // Agregar todos los campos de texto/números
         Object.keys(unitData).forEach(key => {
             const val = unitData[key];
-            if (val === null || val === undefined) return;
-
-            if (typeof val === 'boolean') {
-                formData.append(key, val.toString());
-            } else {
+            if (val !== null && val !== undefined) {
                 formData.append(key, val);
             }
         });
 
-        // Agregar imagen si existe
+        // Agregar imagen si existe (el backend espera 'foto')
         if (imageFile) {
-            formData.append('imagen', imageFile);
+            formData.append('foto', imageFile);
         }
 
-        const response = await api.post('/units/form', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+        // 🚨 SOLUCIÓN: Sobrescribimos el header global para que Axios sepa que esto es un archivo
+        const response = await api.post('/units/', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
         });
         return { success: true, data: response.data };
     } catch (error) {
-        const errorDetail = error.response?.data?.detail;
-        let errorMessage = 'Error al crear la unidad';
-
-        if (typeof errorDetail === 'string') {
-            errorMessage = errorDetail;
-        } else if (Array.isArray(errorDetail)) {
-            errorMessage = errorDetail.map(e => e.msg).join(', ');
-        }
-
-        return { success: false, error: errorMessage };
+        return { success: false, error: extractFastAPIError(error, 'Error al crear la unidad con imagen') };
     }
 };
 
@@ -91,20 +92,38 @@ export const getBBPOptions = async (unitId) => {
     }
 };
 
-// Actualizar unidad
+// Actualizar unidad (Inteligente: decide si usa JSON o FormData)
 export const updateUnit = async (id, updateData) => {
     try {
-        const response = await api.put(`/units/${id}`, updateData);
-        return { success: true, data: response.data };
-    } catch (error) {
-        const errorDetail = error.response?.data?.detail;
-        let errorMessage = 'Error al actualizar la unidad';
+        // Si hay un archivo nuevo o se ordenó borrar la foto, usamos FormData
+        if (updateData.foto instanceof File || updateData.remove_foto) {
+            const formData = new FormData();
+            Object.keys(updateData).forEach(key => {
+                const val = updateData[key];
+                if (val !== null && val !== undefined && key !== 'foto') {
+                    formData.append(key, val);
+                }
+            });
 
-        if (typeof errorDetail === 'string') {
-            errorMessage = errorDetail;
+            if (updateData.foto instanceof File) {
+                formData.append('foto', updateData.foto);
+            }
+
+            // 🚨 SOLUCIÓN: Sobrescribimos el header también en el PUT
+            const response = await api.put(`/units/${id}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            return { success: true, data: response.data };
+        } else {
+            // Si no hay cambios en la foto, usamos el endpoint JSON rápido
+            const { foto, remove_foto, ...jsonPayload } = updateData;
+            const response = await api.put(`/units/${id}/json`, jsonPayload);
+            return { success: true, data: response.data };
         }
-
-        return { success: false, error: errorMessage };
+    } catch (error) {
+        return { success: false, error: extractFastAPIError(error, 'Error al actualizar la unidad') };
     }
 };
 
@@ -114,15 +133,17 @@ export const deleteUnit = async (id) => {
         const response = await api.delete(`/units/${id}`);
         return { success: true, data: response.data };
     } catch (error) {
-        return { success: false, error: 'Error al eliminar la unidad' };
+        return { success: false, error: extractFastAPIError(error, 'Error al eliminar la unidad') };
     }
 };
 
-// Función de compatibilidad para mantener código existente
+// Función maestra de compatibilidad (usada por tu PropertyRegistrationPage)
 export const createUnit = async (unitData) => {
     if (unitData.foto instanceof File) {
         const { foto, ...rest } = unitData;
         return createUnitWithImage(rest, foto);
     }
-    return createUnitJSON(unitData);
+    // Si no hay foto, extraemos la llave foto (que será null) y mandamos el resto como JSON
+    const { foto, ...rest } = unitData;
+    return createUnitJSON(rest);
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -190,6 +190,7 @@ const PropertyRegistrationPage = () => {
 
         setLoading(true);
         try {
+            // ARMAMOS EL PAYLOAD ESTRICTAMENTE CON LO QUE ESPERA EL BACKEND (schema/unit.py)
             const unitPayload = {
                 direccion_unidad: formData.direccion,
                 distrito_unidad: formData.distrito,
@@ -197,17 +198,20 @@ const PropertyRegistrationPage = () => {
                 precio_venta: precioVal,
                 codigo_moneda: MONEDA_MAP[formData.moneda] ?? 1,
                 codigo_modalidad: MODALIDAD_MAP[formData.modalidad_vivienda] ?? 1,
-                codigo_tipo_venta: formData.modalidad_vivienda === 'Compra'
-                    ? (TIPO_VENTA_MAP[formData.tipo_venta] ?? 1)
-                    : null,
                 es_sostenible: formData.es_sostenible,
-                certificacion_sostenible: formData.es_sostenible ? formData.certificacion_sostenible : null,
-                ahorro_energia: formData.ahorro_energia ? parseFloat(formData.ahorro_energia) : null,
-                ahorro_agua: formData.ahorro_agua ? parseFloat(formData.ahorro_agua) : null,
                 codigo_estado: ESTADO_MAP[formData.estado_registro] ?? 1,
-                foto: formData.foto,
-                remove_foto: fotoRemoved ? true : false,
+                foto: formData.foto
             };
+
+            // Solo enviamos codigo_tipo_venta si aplica (Compra)
+            if (formData.modalidad_vivienda === 'Compra') {
+                unitPayload.codigo_tipo_venta = TIPO_VENTA_MAP[formData.tipo_venta] ?? 1;
+            }
+
+            // Si estamos editando y se borró la foto, mandamos la bandera al unitService
+            if (editingId && fotoRemoved) {
+                unitPayload.remove_foto = true;
+            }
 
             let response;
             if (editingId) {
@@ -225,13 +229,11 @@ const PropertyRegistrationPage = () => {
             }
         } catch (error) {
             console.error("Error al procesar propiedad:", error);
-            const msg = error.response?.data?.detail || "No pudimos guardar la propiedad. Verifica los datos e intenta de nuevo.";
-            alert(`Error: ${msg}`);
+            alert("No pudimos guardar la propiedad. Verifica la conexión con el servidor.");
         } finally {
             setLoading(false);
         }
     };
-
 
 
     return (
@@ -352,7 +354,7 @@ const PropertyRegistrationPage = () => {
                                 <div className={`bg-gray-50 border rounded-xl h-10 flex items-center transition-all ${formData.area !== '' && parseFloat(formData.area) <= 0
                                     ? 'border-red-300 bg-red-50'
                                     : 'border-gray-100'
-                                    }`}>
+                                }`}>
                                     <input
                                         name="area" value={formData.area}
                                         onChange={(e) => {

@@ -18,26 +18,35 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
     try {
       const response = await login(email, password);
+
+      // Validamos que la respuesta tenga el token antes de intentar decodificarlo
+      if (!response || !response.access_token) {
+        throw new Error("No se recibió el token de acceso");
+      }
+
       const decodedToken = jwtDecode(response.access_token);
       const userRole = decodedToken.role || decodedToken.rol;
 
       setLoading(false);
-      switch (userRole) {
-        case 'Administrador':
+
+      // Convertimos a minúsculas para evaluar la redirección correctamente
+      switch (userRole?.toLowerCase()) {
         case 'administrador':
-        case 'Asesor':
-        case 'asesor':
-          navigate('/dashboard');
+          navigate('/admin/dashboard');
           break;
-        case 'Cliente':
+        case 'asesor':
+          navigate('/asesor/dashboard');
+          break;
         case 'cliente':
           navigate('/cliente/dashboard');
           break;
         default:
-          navigate('/');
+          navigate('/'); // Redirección por defecto si el rol no coincide
       }
+
     } catch (err) {
       console.error(err);
       setLoading(false);
