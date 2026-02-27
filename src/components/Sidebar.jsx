@@ -25,7 +25,6 @@ const Sidebar = () => {
     { name: 'Inicio', path: getHomePath(currentRole), roles: ['administrador', 'asesor', 'cliente'] },
     { name: 'Propiedades', path: '/propiedades', roles: ['administrador', 'asesor', 'cliente'] },
     { name: 'Simulaciones', path: '/simulador', roles: ['administrador', 'asesor', 'cliente'] }, // ¡Añadimos al asesor aquí!
-    { name: 'Mi Cartera', path: '/clientes', roles: ['administrador', 'asesor'] }, // Le cambié el nombre para que suene más profesional para el asesor
     { name: 'Mi Perfil', path: '/perfil', roles: ['cliente', 'asesor'] },
     { name: 'Configuración', path: '/configuracion', roles: ['administrador', 'asesor', 'cliente'] },
   ];

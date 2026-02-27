@@ -8,6 +8,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import { useAuth } from '../context/AuthContext';
 import { getClients } from '../services/clientService';
 import { useNavigate } from 'react-router-dom';
+import ClientForm from '../components/ClientForm';
 
 // Utilidades de formateo
 const formatCurrency = (amount) => {
@@ -181,14 +182,15 @@ const AdvisorDashboard = () => {
           )}
         </section>
 
-        {/* AQUÍ IRÁ EL MODAL DEL FORMULARIO */}
+        {/* Modal del Formulario */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-2xl relative">
-              {/* Placeholder para el ClientForm que crearemos */}
-              <h2 className="text-2xl font-bold mb-4">{clientToEdit ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
-              <p className="text-gray-500 mb-4">Aquí irá el formulario que conectará con tu backend.</p>
-              <button onClick={() => setIsModalOpen(false)} className="bg-gray-200 px-4 py-2 rounded text-gray-700">Cerrar</button>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-2xl relative animate-fade-in-up">
+              <ClientForm
+                clientToEdit={clientToEdit}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={loadClients} // Esto recargará la tabla automáticamente
+              />
             </div>
           </div>
         )}

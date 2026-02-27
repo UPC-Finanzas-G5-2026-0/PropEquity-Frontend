@@ -33,10 +33,15 @@ function App() {
 
           {/* Rutas Privadas - Asesor / Admin */}
           <Route path="/asesor/dashboard" element={<AdvisorDashboard />} />
-          <Route path="/dashboard" element={<PropertyRegistrationPage />} />
+          {/* ¡CORREGIDO! Mi Cartera ahora abre el panel del Asesor */}
+          <Route path="/clientes" element={<AdvisorDashboard />} />
+
+          {/* Rutas de Propiedades (Unidades Inmobiliarias) */}
           <Route path="/propiedades" element={<PropertyRegistrationPage />} />
           <Route path="/property/register" element={<PropertyRegistrationPage />} />
-          <Route path="/clientes" element={<PropertyRegistrationPage />} />
+
+          {/* Ruta fallback para el dashboard genérico */}
+          <Route path="/dashboard" element={<AdvisorDashboard />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
