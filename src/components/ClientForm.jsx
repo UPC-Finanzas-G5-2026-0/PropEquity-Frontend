@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { createClient, updateClient } from '../services/clientService';
 import CloseIcon from '@mui/icons-material/Close';
+import Tooltip from '@mui/material/Tooltip';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 const ClientForm = ({ clientToEdit, onClose, onSuccess }) => {
   // Inicializamos el estado. Si hay un cliente para editar, llenamos los datos; si no, va vacío.
@@ -84,17 +86,32 @@ const ClientForm = ({ clientToEdit, onClose, onSuccess }) => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Nombres</label>
+            <label className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+              Nombres
+              <Tooltip title="Nombres completos del cliente tal como aparecen en su documento de identidad." arrow placement="top">
+                <InfoOutlinedIcon fontSize="small" className="ml-1 text-gray-400 hover:text-brand-orange cursor-help transition-colors" />
+              </Tooltip>
+            </label>
             <input required type="text" name="nombres" value={formData.nombres} onChange={handleChange} className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl py-2.5 px-4 focus:outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Apellidos</label>
+            <label className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+              Apellidos
+              <Tooltip title="Apellidos paterno y materno del cliente tal como aparecen en su documento de identidad." arrow placement="top">
+                <InfoOutlinedIcon fontSize="small" className="ml-1 text-gray-400 hover:text-brand-orange cursor-help transition-colors" />
+              </Tooltip>
+            </label>
             <input required type="text" name="apellidos" value={formData.apellidos} onChange={handleChange} className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl py-2.5 px-4 focus:outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all" />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Correo Electrónico</label>
+          <label className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+            Correo Electrónico
+            <Tooltip title="Dirección de correo electrónico válida. El cliente la utilizará para iniciar sesión en el sistema." arrow placement="top">
+              <InfoOutlinedIcon fontSize="small" className="ml-1 text-gray-400 hover:text-brand-orange cursor-help transition-colors" />
+            </Tooltip>
+          </label>
           <input
             required={!clientToEdit}
             disabled={!!clientToEdit} // Deshabilitado si estamos editando
@@ -108,17 +125,32 @@ const ClientForm = ({ clientToEdit, onClose, onSuccess }) => {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">DNI</label>
+            <label className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+              DNI
+              <Tooltip title="Documento Nacional de Identidad. Debe contener exactamente 8 dígitos numéricos sin espacios ni letras." arrow placement="top">
+                <InfoOutlinedIcon fontSize="small" className="ml-1 text-gray-400 hover:text-brand-orange cursor-help transition-colors" />
+              </Tooltip>
+            </label>
             <input required type="text" name="dni_cliente" maxLength="8" pattern="\d{8}" title="Debe contener 8 dígitos numéricos" value={formData.dni_cliente} onChange={handleChange} className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl py-2.5 px-4 focus:outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Teléfono</label>
+            <label className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+              Teléfono
+              <Tooltip title="Número de celular activo de 9 dígitos. Debe comenzar con el número 9." arrow placement="top">
+                <InfoOutlinedIcon fontSize="small" className="ml-1 text-gray-400 hover:text-brand-orange cursor-help transition-colors" />
+              </Tooltip>
+            </label>
             <input required type="text" name="telefono_cliente" maxLength="9" pattern="\d{9}" title="Debe contener 9 dígitos numéricos" value={formData.telefono_cliente} onChange={handleChange} className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl py-2.5 px-4 focus:outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all" />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Ingresos Mensuales (S/)</label>
+          <label className="flex items-center text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
+            Ingresos Mensuales (S/)
+            <Tooltip title="Suma total de los ingresos netos demostrables al mes. Si el cliente tiene un cónyuge o deudor solidario, registre la suma de ambos." arrow placement="top">
+              <InfoOutlinedIcon fontSize="small" className="ml-1 text-gray-400 hover:text-brand-orange cursor-help transition-colors" />
+            </Tooltip>
+          </label>
           <input required type="number" step="0.01" min="0" name="ingreso_mensual" value={formData.ingreso_mensual} onChange={handleChange} placeholder="Ej. 3500.00" className="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-xl py-2.5 px-4 focus:outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-all" />
         </div>
 
