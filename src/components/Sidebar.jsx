@@ -8,7 +8,9 @@ const Sidebar = () => {
   const navigate = useNavigate();
 
   // 1. Normalizamos el rol a minúsculas para evitar fallos por mayúsculas
-  const currentRole = (user?.role || user?.rol || '').toLowerCase();
+  // Añadimos la lectura de 'rol_rel.tipo_rol' que es como lo envía tu backend de FastAPI
+  const rawRole = user?.rol_rel?.tipo_rol || user?.role || user?.rol || '';
+  const currentRole = rawRole.toLowerCase();
 
   // 2. Función para asignar la ruta correcta del Dashboard según el rol
   const getHomePath = (role) => {
@@ -20,11 +22,17 @@ const Sidebar = () => {
     }
   };
 
-  // 3. Definimos el menú (nota que los roles ahora están en minúsculas)
+  // 3. Definimos el menú con los accesos estrictos
   const allMenuItems = [
     { name: 'Inicio', path: getHomePath(currentRole), roles: ['administrador', 'asesor', 'cliente'] },
-    { name: 'Propiedades', path: '/propiedades', roles: ['administrador', 'asesor', 'cliente'] },
-    { name: 'Simulaciones', path: '/simulador', roles: ['administrador', 'asesor', 'cliente'] }, // ¡Añadimos al asesor aquí!
+
+    // 🚨 CAMBIO APLICADO: La gestión de inventario ahora es EXCLUSIVA del administrador
+    { name: 'Inventario', path: '/propiedades', roles: ['administrador'] },
+
+    // Aquí pondremos el catálogo de solo lectura en el futuro
+    // { name: 'Catálogo', path: '/catalogo', roles: ['asesor', 'cliente'] },
+
+    { name: 'Simulaciones', path: '/simulador', roles: ['administrador', 'asesor', 'cliente'] },
     { name: 'Mi Perfil', path: '/perfil', roles: ['cliente', 'asesor'] },
     { name: 'Configuración', path: '/configuracion', roles: ['administrador', 'asesor', 'cliente'] },
   ];
