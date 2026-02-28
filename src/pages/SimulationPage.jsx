@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar';
 import { getUnits } from '../services/unitService';
 import { createSimulation, exportToExcel, exportToPDF } from '../services/simulationService';
 import { useAuth } from '../context/AuthContext';
+import { useLocation } from 'react-router-dom'; // 🚨 NUEVO: Para recibir datos del Catálogo
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
@@ -13,43 +14,41 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import CustomSelect from '../components/CustomSelect';
 
 const SimulationPage = () => {
     const { user } = useAuth();
+    const location = useLocation(); // Enganchamos la memoria del router
+
+    // Normalizamos el rol y el ID para evitar fallos
+    const userRole = (user?.rol_rel?.tipo_rol || user?.role || user?.rol || '').toLowerCase();
+    const userId = user?.codigo_usuario || user?.id;
+
+    // Verificamos si venimos desde el catálogo con una propiedad preseleccionada
+    const unidadPreseleccionada = location.state?.unidadSeleccionada;
+
     const [units, setUnits] = useState([]);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [serverError, setServerError] = useState(null);
     const [cuotaType, setCuotaType] = useState('porcentaje');
 
-    // Función para obtener título según el tipo de error del backend
     const getErrorTitle = (errorMsg) => {
         const lowerMsg = errorMsg.toLowerCase();
-
-        if (lowerMsg.includes('90%') || lowerMsg.includes('financiamiento excede') || lowerMsg.includes('ltv')) {
-            return 'Financiamiento excede 90%';
-        }
-        if (lowerMsg.includes('cuota inicial') || lowerMsg.includes('inicial mínima') || lowerMsg.includes('10%')) {
-            return 'Cuota inicial insuficiente';
-        }
-        if (lowerMsg.includes('ingreso') || lowerMsg.includes('ratio') || lowerMsg.includes('40%') || lowerMsg.includes('50%')) {
-            return 'Capacidad de pago excedida';
-        }
-        if (lowerMsg.includes('plazo')) {
-            return 'Plazo fuera de rango';
-        }
-        if (lowerMsg.includes('bbp') || lowerMsg.includes('bono')) {
-            return 'Error con BBP';
-        }
-        if (lowerMsg.includes('precio') || lowerMsg.includes('mivivienda')) {
-            return 'Precio fuera de rango';
-        }
+        if (lowerMsg.includes('90%') || lowerMsg.includes('excede') || lowerMsg.includes('ltv')) return 'Financiamiento excede 90%';
+        if (lowerMsg.includes('cuota inicial') || lowerMsg.includes('inicial mínima') || lowerMsg.includes('10%')) return 'Cuota inicial insuficiente';
+        if (lowerMsg.includes('ingreso') || lowerMsg.includes('ratio') || lowerMsg.includes('40%') || lowerMsg.includes('50%')) return 'Capacidad de pago excedida';
+        if (lowerMsg.includes('plazo')) return 'Plazo fuera de rango';
+        if (lowerMsg.includes('bbp') || lowerMsg.includes('bono')) return 'Error con BBP';
+        if (lowerMsg.includes('precio') || lowerMsg.includes('mivivienda')) return 'Precio fuera de rango';
+        if (lowerMsg.includes('prospecto')) return 'Falta Prospecto';
         return 'Error de validación';
     };
 
     const [formData, setFormData] = useState({
-        codigo_unidad: '',
+        codigo_unidad: unidadPreseleccionada ? String(unidadPreseleccionada.codigo_unidad) : '',
+        codigo_prospecto: '', // 🚨 NUEVO: Campo vital para el Asesor
         cuota_inicial: '10',
         gastos_tasacion: '250',
         gastos_notariales: '1200',
@@ -81,7 +80,7 @@ const SimulationPage = () => {
             const response = await getUnits();
             if (response.success) {
                 setUnits(response.data);
-                // Solo seleccionar primera unidad si no hay ninguna seleccionada
+                // Solo auto-selecciona el primero si no vino nada del catálogo
                 if (response.data.length > 0 && !formData.codigo_unidad) {
                     setFormData(prev => ({ ...prev, codigo_unidad: String(response.data[0].codigo_unidad) }));
                 }
@@ -95,28 +94,24 @@ const SimulationPage = () => {
         const { name, value } = e.target;
         if (e.target.type === 'number' && parseFloat(value) < 0) return;
         setFormData(prev => ({ ...prev, [name]: value }));
-        setResult(null); // Limpiar resultado anterior cuando cambian parámetros
+        setResult(null);
         setServerError(null);
     };
 
     const handleCustomChange = (name, value) => {
         setFormData(prev => ({ ...prev, [name]: String(value) }));
-        setResult(null); // Limpiar resultado anterior cuando cambian parámetros
+        setResult(null);
         setServerError(null);
     };
 
     useEffect(() => {
         fetchUnits();
-
-        // Refrescar cuando la ventana gana el foco (ej: vuelves de otra pestaña/página)
         const handleFocus = () => fetchUnits();
         window.addEventListener('focus', handleFocus);
-
         return () => window.removeEventListener('focus', handleFocus);
     }, []);
 
-    // BBP según DS 004-2025-VIVIENDA - Rangos y montos oficiales
-    const BONO_INTEGRADOR = 3600; // Bono adicional para categorías vulnerables
+    const BONO_INTEGRADOR = 3600;
     const BBP_RANGES = [
         { min: 68800, max: 97800, rango: 'R1', tradicional: 35100, sostenible: 41400 },
         { min: 97801, max: 146900, rango: 'R2', tradicional: 28000, sostenible: 34300 },
@@ -128,27 +123,17 @@ const SimulationPage = () => {
     const calculateBBP = (precio, moneda, sostenible = false, integrador = false, tc = 3.80) => {
         let pPEN = parseFloat(precio);
         const isUSD = moneda === 2 || moneda === 'USD';
-
-        // Si es USD, convertir a soles para validar rango según normativa FMV
         if (isUSD) pPEN = pPEN * tc;
 
-        // Buscar rango aplicable
         const rangoAplicable = BBP_RANGES.find(r => pPEN >= r.min && pPEN <= r.max);
         if (!rangoAplicable) return '0';
 
-        // Base BBP según tipo de vivienda
         let bonoPEN = sostenible ? rangoAplicable.sostenible : rangoAplicable.tradicional;
+        if (integrador && rangoAplicable.rango !== 'R5') bonoPEN += BONO_INTEGRADOR;
 
-        // Agregar Bono Integrador si aplica (solo en R1-R4)
-        if (integrador && rangoAplicable.rango !== 'R5') {
-            bonoPEN += BONO_INTEGRADOR;
-        }
-
-        // Convertir el bono de vuelta a USD si la unidad está en esa moneda
         return isUSD ? (bonoPEN / tc).toFixed(2) : bonoPEN.toString();
     };
 
-    // Obtener info de rango para mostrar en UI
     const getRangoInfo = (precio, moneda, tc = 3.80) => {
         let pPEN = parseFloat(precio);
         const isUSD = moneda === 2 || moneda === 'USD';
@@ -159,8 +144,6 @@ const SimulationPage = () => {
     useEffect(() => {
         if (selectedUnit) {
             const m = selectedUnit.moneda || selectedUnit.codigo_moneda;
-
-            // BLINDAJE: Si ya recibió apoyo o tiene crédito activo, NO califica a BBP (Regla FMV)
             if (formData.sin_bono || formData.ha_recibido_apoyo || formData.tiene_credito_activo) {
                 setFormData(prev => ({ ...prev, bono_bbp: '0' }));
                 return;
@@ -171,23 +154,17 @@ const SimulationPage = () => {
                 if (parseFloat(user?.ingreso_mensual || 0) > 4746) isIntegradorEligible = false;
             }
 
-            const bono = calculateBBP(
-                selectedUnit.precio_venta,
-                m,
-                formData.vivienda_sostenible,
-                isIntegradorEligible,
-                parseFloat(formData.tipo_cambio || 3.80)
-            );
+            const bono = calculateBBP(selectedUnit.precio_venta, m, formData.vivienda_sostenible, isIntegradorEligible, parseFloat(formData.tipo_cambio || 3.80));
             setFormData(prev => ({ ...prev, bono_bbp: bono }));
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedUnit, formData.vivienda_sostenible, formData.es_integrador, formData.categoria_integrador, formData.sin_bono, formData.ha_recibido_apoyo, formData.tiene_credito_activo, formData.tipo_cambio, user?.ingreso_mensual]);
 
     useEffect(() => {
         if (formData.ifi_seleccionada && formData.codigo_tipo_tasa === '1') {
             setFormData(prev => ({ ...prev, codigo_tipo_tasa: '2' }));
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData.ifi_seleccionada]);
 
     useEffect(() => {
@@ -212,13 +189,18 @@ const SimulationPage = () => {
     }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp]);
 
     const handleSimulate = async () => {
+        // Validación frontend del prospecto
+        if (userRole === 'asesor' && !formData.codigo_prospecto) {
+            setServerError({ titulo: 'Falta Prospecto', mensaje: 'Debes ingresar el ID del prospecto para realizar la simulación.' });
+            return;
+        }
+
         const val = parseFloat(formData.cuota_inicial);
         const plazo = parseInt(formData.plazo_meses);
         const precio = selectedUnit?.precio_venta || 0;
         let finalCuotaInicial = cuotaType === 'porcentaje' ? (val / 100) * precio : val;
         const totalGastosCierre = parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_ifi || 0);
 
-        // El backend realiza todas las validaciones
         setLoading(true);
         setServerError(null);
         try {
@@ -229,6 +211,8 @@ const SimulationPage = () => {
                 if (selectedUnit?.es_sostenible) tipoBbp = formData.es_integrador ? "Integrador Sostenible" : "Sostenible";
                 else tipoBbp = formData.es_integrador ? "Integrador Tradicional" : "Tradicional";
             }
+
+            // 🚨 SOLUCIÓN AL BUG: Asignamos el código_prospecto si es asesor
             const payload = {
                 codigo_unidad: parseInt(formData.codigo_unidad),
                 cuota_inicial: parseFloat(finalCuotaInicial),
@@ -246,30 +230,28 @@ const SimulationPage = () => {
                 tipo_cambio: parseFloat(formData.tipo_cambio),
                 ha_recibido_apoyo: formData.ha_recibido_apoyo,
                 tiene_credito_activo: formData.tiene_credito_activo,
-                codigo_cliente: user?.role === 'Cliente' ? user.id : null,
-                codigo_asesor: user?.role === 'Asesor' ? user.id : null,
+
+                // Asignación estricta por roles
+                codigo_cliente: userRole === 'cliente' ? userId : null,
+                codigo_asesor: userRole === 'asesor' ? userId : null,
+                codigo_prospecto: userRole === 'asesor' ? parseInt(formData.codigo_prospecto) : null,
+
                 fecha_inicio_prestamo: formData.fecha_inicio_prestamo
             };
+
             const response = await createSimulation(payload);
             if (response.success) {
                 setResult(response.data);
                 setServerError(null);
                 setTimeout(() => { document.getElementById('simulation-result')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
             } else {
-                // Mostrar error del backend directamente
-                setServerError({
-                    titulo: getErrorTitle(response.error),
-                    mensaje: response.error
-                });
+                setServerError({ titulo: getErrorTitle(response.error), mensaje: response.error });
                 setResult(null);
             }
         } catch (error) {
             console.error(error);
             const msg = error.message || 'Error al simular';
-            setServerError({
-                titulo: getErrorTitle(msg),
-                mensaje: msg
-            });
+            setServerError({ titulo: getErrorTitle(msg), mensaje: msg });
             setResult(null);
         } finally { setLoading(false); }
     };
@@ -278,7 +260,7 @@ const SimulationPage = () => {
         if (selectedUnit) {
             setFormData(prev => ({ ...prev, vivienda_sostenible: selectedUnit.es_sostenible || false, es_integrador: false, sin_bono: true }));
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedUnit]);
 
     return (
@@ -295,9 +277,27 @@ const SimulationPage = () => {
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start mb-6">
                     <div className="xl:col-span-9 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {/* Inmueble */}
+                            {/* Inmueble y Cliente */}
                             <div className="space-y-3">
                                 <h3 className="text-[10px] font-black text-brand-blue uppercase tracking-widest border-b border-gray-50 pb-2 mb-1">Inmueble</h3>
+
+                                {/* 🚨 NUEVO: Selector de Prospecto SOLO para Asesores */}
+                                {userRole === 'asesor' && (
+                                    <div className="bg-orange-50 border border-orange-100 p-2 rounded-xl mb-3">
+                                        <label className="flex items-center gap-1 text-[9px] font-black text-brand-orange uppercase tracking-widest mb-1">
+                                            <PersonOutlineIcon sx={{ fontSize: 12 }} /> ID del Prospecto
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="codigo_prospecto"
+                                            value={formData.codigo_prospecto}
+                                            onChange={handleChange}
+                                            placeholder="Ej: 5"
+                                            className="w-full bg-white border border-orange-200 rounded-md py-1.5 px-2 text-xs font-bold text-gray-700 focus:outline-none focus:border-brand-orange shadow-sm"
+                                        />
+                                    </div>
+                                )}
+
                                 <CustomSelect label="Unidad" value={formData.codigo_unidad} showInfo={true} onChange={(val) => handleCustomChange('codigo_unidad', val)} options={units.map(u => ({ id: u.codigo_unidad, label: `${u.distrito_unidad} - ${u.direccion_unidad}` }))} />
 
                                 {/* Info del inmueble seleccionado */}
@@ -318,6 +318,7 @@ const SimulationPage = () => {
                                         </div>
                                     );
                                 })()}
+
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Plazo (Meses)</label>
                                     <input type="number" name="plazo_meses" value={formData.plazo_meses} onChange={handleChange} min="60" max="240" className="w-full bg-transparent border-b border-gray-100 py-1 px-1 focus:outline-none focus:border-brand-blue font-black text-gray-700 text-sm" />
@@ -353,7 +354,6 @@ const SimulationPage = () => {
                                         const p = selectedUnit?.precio_venta || 0;
                                         const val = parseFloat(formData.cuota_inicial);
                                         const ini = cuotaType === 'porcentaje' ? (val / 100) * p : val;
-                                        // Compras (Mod 1) exigen 10%. Construcción/Mejoramiento (Mod 2/3) exigen 7.5%.
                                         const minPerc = selectedUnit?.codigo_modalidad === 1 ? 0.10 : 0.075;
                                         const minMonto = p * minPerc;
                                         const moneda = selectedUnit?.moneda === 2 ? '$' : 'S/';
@@ -385,7 +385,6 @@ const SimulationPage = () => {
                                         const mod = parseInt(selectedUnit?.codigo_modalidad || 0);
                                         const isOwner = user?.es_propietario_vivienda;
 
-                                        // Razones por las que BBP no aplica
                                         if (p > 362100) return <p className="text-[8px] font-bold text-amber-500 p-2 uppercase text-center">R5: Solo Bono Integrador</p>;
                                         if (mod === 3) return <p className="text-[8px] font-bold text-red-400 p-2 uppercase text-center">Mejoramiento: Sin BBP</p>;
                                         if (isOwner) return <p className="text-[8px] font-bold text-red-400 p-2 uppercase text-center">Propietario actual: Sin BBP</p>;
@@ -431,9 +430,8 @@ const SimulationPage = () => {
                                 </div>
                                 <CustomSelect label="Tipo de Tasa" value={formData.codigo_tipo_tasa} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_tasa', val)} options={[{ id: '1', label: 'Nominal (TNA)' }, { id: '2', label: 'Efectiva (TEA)' }]} />
 
-                                {/* Capitalización siempre visible o condicional, pero con mejor spacing */}
                                 <div className={`transition-all duration-300 ${formData.codigo_tipo_tasa === '1' ? 'opacity-100 h-auto mb-2' : 'opacity-40 h-auto pointer-events-none'}`}>
-                                    <CustomSelect label="Capitalización" value={formData.capitalizacion} showInfo={true} onChange={(val) => handleCustomChange('capitalizacion', val)} options={[{ id: 'Diaria', label: 'Diaria' }, { id: 'Quincenal', label: 'Quincenal' }, { id: 'Mensual', label: 'Mensual' }, { id: 'Trimestral', label: 'Trimestral' }, { id: 'Semestral', label: 'Semestral' }]} />
+                                    <CustomSelect label="Capitalización" value={formData.capitalizacion} showInfo={true} onChange={(val) => handleCustomChange('capitalizacion', val)} options={[{ id: 'Mensual', label: 'Mensual' }, { id: 'Bimestral', label: 'Bimestral' }, { id: 'Trimestral', label: 'Trimestral' }]} />
                                 </div>
 
                                 <div>
@@ -590,18 +588,18 @@ const SimulationPage = () => {
                             <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="bg-gray-50/30 text-[7px] font-black text-gray-400 uppercase">
                                 <th className="px-5 py-2.5 border-b border-gray-100">N° Cuota</th><th className="px-5 py-2.5 border-b border-gray-100 text-center">Vencimiento</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Saldo Inicial</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Amortización</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Interés</th><th className="px-5 py-2.5 border-b border-gray-100 text-right bg-brand-blue/5 text-brand-blue">Cuota Total</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Saldo Final</th>
                             </tr></thead><tbody className="divide-y divide-gray-50 text-[9px] font-bold text-gray-700">
-                                    {result.detalles.map((cuota) => (
-                                        <tr key={cuota.numero_cuota} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-5 py-2.5">#{cuota.numero_cuota}</td>
-                                            <td className="px-5 py-2.5 text-center text-gray-400">{cuota.fecha_vencimiento}</td>
-                                            <td className="px-5 py-2.5 text-right">S/ {cuota.saldo_inicio?.toLocaleString()}</td>
-                                            <td className="px-5 py-2.5 text-right">S/ {cuota.amortizacion.toLocaleString()}</td>
-                                            <td className="px-5 py-2.5 text-right">S/ {cuota.interes.toLocaleString()}</td>
-                                            <td className="px-5 py-2.5 text-right font-black text-brand-blue bg-brand-blue/[0.01]">S/ {cuota.cuota_total.toLocaleString()}</td>
-                                            <td className="px-5 py-2.5 text-right">S/ {cuota.saldo_final?.toLocaleString()}</td>
-                                        </tr>
-                                    ))}
-                                </tbody></table></div>
+                            {result.detalles.map((cuota) => (
+                                <tr key={cuota.numero_cuota} className="hover:bg-gray-50/50 transition-colors">
+                                    <td className="px-5 py-2.5">#{cuota.numero_cuota}</td>
+                                    <td className="px-5 py-2.5 text-center text-gray-400">{cuota.fecha_vencimiento}</td>
+                                    <td className="px-5 py-2.5 text-right">S/ {cuota.saldo_inicio?.toLocaleString()}</td>
+                                    <td className="px-5 py-2.5 text-right">S/ {cuota.amortizacion.toLocaleString()}</td>
+                                    <td className="px-5 py-2.5 text-right">S/ {cuota.interes.toLocaleString()}</td>
+                                    <td className="px-5 py-2.5 text-right font-black text-brand-blue bg-brand-blue/[0.01]">S/ {cuota.cuota_total.toLocaleString()}</td>
+                                    <td className="px-5 py-2.5 text-right">S/ {cuota.saldo_final?.toLocaleString()}</td>
+                                </tr>
+                            ))}
+                            </tbody></table></div>
                         </div>
                     </div>
                 )}
