@@ -26,11 +26,11 @@ const Sidebar = () => {
   const allMenuItems = [
     { name: 'Inicio', path: getHomePath(currentRole), roles: ['administrador', 'asesor', 'cliente'] },
 
-    // 🚨 CAMBIO APLICADO: La gestión de inventario ahora es EXCLUSIVA del administrador
+    // 👑 EXCLUSIVO ADMIN: Crear, editar y borrar propiedades (Inventario)
     { name: 'Inventario', path: '/propiedades', roles: ['administrador'] },
 
-    // Aquí pondremos el catálogo de solo lectura en el futuro
-    // { name: 'Catálogo', path: '/catalogo', roles: ['asesor', 'cliente'] },
+    // 🏠 VITRINA PÚBLICA: Asesores y Clientes pueden ver y seleccionar propiedades
+    { name: 'Catálogo', path: '/catalogo', roles: ['asesor', 'cliente'] },
 
     { name: 'Simulaciones', path: '/simulador', roles: ['administrador', 'asesor', 'cliente'] },
     { name: 'Mi Perfil', path: '/perfil', roles: ['cliente', 'asesor'] },
