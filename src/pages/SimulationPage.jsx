@@ -3,7 +3,7 @@ import Sidebar from '../components/Sidebar';
 import { getUnits } from '../services/unitService';
 import { createSimulation, exportToExcel, exportToPDF } from '../services/simulationService';
 import { useAuth } from '../context/AuthContext';
-import { useLocation } from 'react-router-dom'; // 🚨 NUEVO: Para recibir datos del Catálogo
+import { useLocation } from 'react-router-dom';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
@@ -19,13 +19,10 @@ import CustomSelect from '../components/CustomSelect';
 
 const SimulationPage = () => {
     const { user } = useAuth();
-    const location = useLocation(); // Enganchamos la memoria del router
+    const location = useLocation();
 
-    // Normalizamos el rol y el ID para evitar fallos
     const userRole = (user?.rol_rel?.tipo_rol || user?.role || user?.rol || '').toLowerCase();
     const userId = user?.codigo_usuario || user?.id;
-
-    // Verificamos si venimos desde el catálogo con una propiedad preseleccionada
     const unidadPreseleccionada = location.state?.unidadSeleccionada;
 
     const [units, setUnits] = useState([]);
@@ -48,7 +45,7 @@ const SimulationPage = () => {
 
     const [formData, setFormData] = useState({
         codigo_unidad: unidadPreseleccionada ? String(unidadPreseleccionada.codigo_unidad) : '',
-        codigo_prospecto: '', // 🚨 NUEVO: Campo vital para el Asesor
+        codigo_prospecto: '',
         cuota_inicial: '10',
         gastos_tasacion: '250',
         gastos_notariales: '1200',
@@ -66,7 +63,8 @@ const SimulationPage = () => {
         plazo_meses: '240',
         codigo_tipo_gracia: '1',
         meses_gracia: '0',
-        seguro_desgravamen: '0.039',
+        // 🚨 SOLUCIÓN APLICADA: El seguro mensual ahora es 0.039%, no 3.9%
+        seguro_desgravamen: '0.00039',
         tipo_cambio: '3.80',
         ha_recibido_apoyo: false,
         tiene_credito_activo: false,
@@ -80,7 +78,6 @@ const SimulationPage = () => {
             const response = await getUnits();
             if (response.success) {
                 setUnits(response.data);
-                // Solo auto-selecciona el primero si no vino nada del catálogo
                 if (response.data.length > 0 && !formData.codigo_unidad) {
                     setFormData(prev => ({ ...prev, codigo_unidad: String(response.data[0].codigo_unidad) }));
                 }
@@ -189,7 +186,6 @@ const SimulationPage = () => {
     }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp]);
 
     const handleSimulate = async () => {
-        // Validación frontend del prospecto
         if (userRole === 'asesor' && !formData.codigo_prospecto) {
             setServerError({ titulo: 'Falta Prospecto', mensaje: 'Debes ingresar el ID del prospecto para realizar la simulación.' });
             return;
@@ -212,7 +208,6 @@ const SimulationPage = () => {
                 else tipoBbp = formData.es_integrador ? "Integrador Tradicional" : "Tradicional";
             }
 
-            // 🚨 SOLUCIÓN AL BUG: Asignamos el código_prospecto si es asesor
             const payload = {
                 codigo_unidad: parseInt(formData.codigo_unidad),
                 cuota_inicial: parseFloat(finalCuotaInicial),
@@ -226,16 +221,13 @@ const SimulationPage = () => {
                 plazo_meses: plazo,
                 tipo_gracia: TIPO_GRACIA_MAP[formData.codigo_tipo_gracia] || 'Ninguno',
                 meses_gracia: parseInt(formData.meses_gracia),
-                seguro_desgravamen: parseFloat(formData.seguro_desgravamen),
+                seguro_desgravamen: parseFloat(formData.seguro_desgravamen), // Ahora viaja 0.00039
                 tipo_cambio: parseFloat(formData.tipo_cambio),
                 ha_recibido_apoyo: formData.ha_recibido_apoyo,
                 tiene_credito_activo: formData.tiene_credito_activo,
-
-                // Asignación estricta por roles
                 codigo_cliente: userRole === 'cliente' ? userId : null,
                 codigo_asesor: userRole === 'asesor' ? userId : null,
                 codigo_prospecto: userRole === 'asesor' ? parseInt(formData.codigo_prospecto) : null,
-
                 fecha_inicio_prestamo: formData.fecha_inicio_prestamo
             };
 
@@ -281,7 +273,6 @@ const SimulationPage = () => {
                             <div className="space-y-3">
                                 <h3 className="text-[10px] font-black text-brand-blue uppercase tracking-widest border-b border-gray-50 pb-2 mb-1">Inmueble</h3>
 
-                                {/* 🚨 NUEVO: Selector de Prospecto SOLO para Asesores */}
                                 {userRole === 'asesor' && (
                                     <div className="bg-orange-50 border border-orange-100 p-2 rounded-xl mb-3">
                                         <label className="flex items-center gap-1 text-[9px] font-black text-brand-orange uppercase tracking-widest mb-1">
@@ -300,7 +291,6 @@ const SimulationPage = () => {
 
                                 <CustomSelect label="Unidad" value={formData.codigo_unidad} showInfo={true} onChange={(val) => handleCustomChange('codigo_unidad', val)} options={units.map(u => ({ id: u.codigo_unidad, label: `${u.distrito_unidad} - ${u.direccion_unidad}` }))} />
 
-                                {/* Info del inmueble seleccionado */}
                                 {selectedUnit && (() => {
                                     const rangoInfo = getRangoInfo(selectedUnit.precio_venta, selectedUnit.moneda || selectedUnit.codigo_moneda, parseFloat(formData.tipo_cambio || 3.80));
                                     const m = selectedUnit.moneda === 2 || selectedUnit.codigo_moneda === 2;
@@ -450,7 +440,6 @@ const SimulationPage = () => {
                                         <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Notaría</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
                                         <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Comis. Banco</label><input type="number" name="comision_ifi" value={formData.comision_ifi} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
                                     </div>
-                                    {/* Indicador % gastos cierre */}
                                     {selectedUnit && (() => {
                                         const totalGastos = parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_ifi || 0);
                                         const precio = parseFloat(selectedUnit.precio_venta || 0);
@@ -493,7 +482,13 @@ const SimulationPage = () => {
                             </div>
 
                             <div className="bg-white/5 p-3 rounded-xl border border-white/10 space-y-1.5">
-                                <div className="flex justify-between text-[9px] font-bold text-gray-300"><span className="uppercase opacity-60">Gastos Operativos</span><span>{selectedUnit?.moneda === 2 ? '$' : 'S/'} {(parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_ifi || 0)).toLocaleString()}</span></div>
+                                <div className="flex justify-between text-[9px] font-bold text-gray-300">
+                                    <span className="uppercase opacity-60">Gastos Operativos</span>
+                                    <span>
+                                        {selectedUnit?.moneda === 2 ? '$' : 'S/'}
+                                        {(parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_ifi || 0)).toLocaleString()}
+                                    </span>
+                                </div>
                                 <div className="flex justify-between text-[9px] font-bold text-gray-300">
                                     <span className="uppercase opacity-60">Tasa Mensual (TEM)</span>
                                     <span className="text-brand-blue-light">
@@ -566,7 +561,6 @@ const SimulationPage = () => {
                         </div>
                     </div>
                 </div>
-
 
                 {result && (
                     <div id="simulation-result" className="animate-in fade-in slide-in-from-bottom-5 duration-700">
