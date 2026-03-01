@@ -31,6 +31,10 @@ const SimulationPage = () => {
     const [serverError, setServerError] = useState(null);
     const [cuotaType, setCuotaType] = useState('porcentaje');
 
+    // 🚨 ESTADOS PARA BÚSQUEDA EN VIVO: IFM y Status del Prospecto/Cliente
+    const [prospectIFM, setProspectIFM] = useState(0);
+    const [prospectStatus, setProspectStatus] = useState('');
+
     const getErrorTitle = (errorMsg) => {
         const lowerMsg = errorMsg.toLowerCase();
         if (lowerMsg.includes('90%') || lowerMsg.includes('excede') || lowerMsg.includes('ltv')) return 'Financiamiento excede 90%';
@@ -39,7 +43,7 @@ const SimulationPage = () => {
         if (lowerMsg.includes('plazo')) return 'Plazo fuera de rango';
         if (lowerMsg.includes('bbp') || lowerMsg.includes('bono')) return 'Error con BBP';
         if (lowerMsg.includes('precio') || lowerMsg.includes('mivivienda')) return 'Precio fuera de rango';
-        if (lowerMsg.includes('prospecto')) return 'Falta Prospecto';
+        if (lowerMsg.includes('prospecto')) return 'Falta ID';
         return 'Error de validación';
     };
 
@@ -63,7 +67,6 @@ const SimulationPage = () => {
         plazo_meses: '240',
         codigo_tipo_gracia: '1',
         meses_gracia: '0',
-        // 🚨 SOLUCIÓN APLICADA: El seguro mensual ahora es 0.039%, no 3.9%
         seguro_desgravamen: '0.00039',
         tipo_cambio: '3.80',
         ha_recibido_apoyo: false,
@@ -100,6 +103,43 @@ const SimulationPage = () => {
         setResult(null);
         setServerError(null);
     };
+
+    // 🚨 EFECTO NINJA: Búsqueda dinámica con el nuevo endpoint `/check-income/`
+    useEffect(() => {
+        const fetchProspect = async () => {
+            if (userRole === 'asesor' && formData.codigo_prospecto) {
+                setProspectStatus('Buscando...');
+                try {
+                    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
+                    const response = await fetch(`http://localhost:8000/api/v1/simulator/check-income/${formData.codigo_prospecto}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        setProspectIFM(data.ifm);
+                        setProspectStatus(`✓ Ingresos cargados (${data.type})`);
+                    } else {
+                        setProspectIFM(0);
+                        setProspectStatus('⚠ ID no encontrado en BD');
+                    }
+                } catch (error) {
+                    setProspectIFM(0);
+                    setProspectStatus('⚠ Error de red');
+                }
+            } else {
+                setProspectIFM(0);
+                setProspectStatus('');
+            }
+        };
+
+        const timer = setTimeout(fetchProspect, 600); // 600ms de delay para no saturar al escribir
+        return () => clearTimeout(timer);
+    }, [formData.codigo_prospecto, userRole]);
 
     useEffect(() => {
         fetchUnits();
@@ -147,15 +187,17 @@ const SimulationPage = () => {
             }
 
             let isIntegradorEligible = formData.es_integrador;
+            const currentIFM = userRole === 'asesor' ? prospectIFM : (parseFloat(user?.ingreso_mensual || 0) + parseFloat(user?.ingreso_conyuge || 0));
+
             if (formData.es_integrador && formData.categoria_integrador === 'Menores ingresos') {
-                if (parseFloat(user?.ingreso_mensual || 0) > 4746) isIntegradorEligible = false;
+                if (currentIFM > 4746) isIntegradorEligible = false;
             }
 
             const bono = calculateBBP(selectedUnit.precio_venta, m, formData.vivienda_sostenible, isIntegradorEligible, parseFloat(formData.tipo_cambio || 3.80));
             setFormData(prev => ({ ...prev, bono_bbp: bono }));
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedUnit, formData.vivienda_sostenible, formData.es_integrador, formData.categoria_integrador, formData.sin_bono, formData.ha_recibido_apoyo, formData.tiene_credito_activo, formData.tipo_cambio, user?.ingreso_mensual]);
+    }, [selectedUnit, formData.vivienda_sostenible, formData.es_integrador, formData.categoria_integrador, formData.sin_bono, formData.ha_recibido_apoyo, formData.tiene_credito_activo, formData.tipo_cambio, prospectIFM, user?.ingreso_mensual, user?.ingreso_conyuge, userRole]);
 
     useEffect(() => {
         if (formData.ifi_seleccionada && formData.codigo_tipo_tasa === '1') {
@@ -187,7 +229,7 @@ const SimulationPage = () => {
 
     const handleSimulate = async () => {
         if (userRole === 'asesor' && !formData.codigo_prospecto) {
-            setServerError({ titulo: 'Falta Prospecto', mensaje: 'Debes ingresar el ID del prospecto para realizar la simulación.' });
+            setServerError({ titulo: 'Falta ID', mensaje: 'Debes ingresar el ID del cliente o prospecto para simular.' });
             return;
         }
 
@@ -221,7 +263,7 @@ const SimulationPage = () => {
                 plazo_meses: plazo,
                 tipo_gracia: TIPO_GRACIA_MAP[formData.codigo_tipo_gracia] || 'Ninguno',
                 meses_gracia: parseInt(formData.meses_gracia),
-                seguro_desgravamen: parseFloat(formData.seguro_desgravamen), // Ahora viaja 0.00039
+                seguro_desgravamen: parseFloat(formData.seguro_desgravamen),
                 tipo_cambio: parseFloat(formData.tipo_cambio),
                 ha_recibido_apoyo: formData.ha_recibido_apoyo,
                 tiene_credito_activo: formData.tiene_credito_activo,
@@ -255,6 +297,11 @@ const SimulationPage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedUnit]);
 
+    // 🚨 ASIGNACIÓN VISUAL DINÁMICA
+    const visualIFM = userRole === 'asesor'
+        ? prospectIFM
+        : (parseFloat(user?.ingreso_mensual || 0) + parseFloat(user?.ingreso_conyuge || 0));
+
     return (
         <div className="flex bg-[#F8FAFC] min-h-screen font-['Inter',_sans-serif]">
             <Sidebar />
@@ -273,19 +320,25 @@ const SimulationPage = () => {
                             <div className="space-y-3">
                                 <h3 className="text-[10px] font-black text-brand-blue uppercase tracking-widest border-b border-gray-50 pb-2 mb-1">Inmueble</h3>
 
+                                {/* 🚨 CAJA DE BÚSQUEDA DEL ASESOR */}
                                 {userRole === 'asesor' && (
                                     <div className="bg-orange-50 border border-orange-100 p-2 rounded-xl mb-3">
                                         <label className="flex items-center gap-1 text-[9px] font-black text-brand-orange uppercase tracking-widest mb-1">
-                                            <PersonOutlineIcon sx={{ fontSize: 12 }} /> ID del Prospecto
+                                            <PersonOutlineIcon sx={{ fontSize: 12 }} /> ID del Prospecto/Cliente
                                         </label>
                                         <input
                                             type="number"
                                             name="codigo_prospecto"
                                             value={formData.codigo_prospecto}
                                             onChange={handleChange}
-                                            placeholder="Ej: 5"
+                                            placeholder="Ej: 126"
                                             className="w-full bg-white border border-orange-200 rounded-md py-1.5 px-2 text-xs font-bold text-gray-700 focus:outline-none focus:border-brand-orange shadow-sm"
                                         />
+                                        {prospectStatus && (
+                                            <p className={`text-[8px] font-bold mt-1.5 leading-tight ${prospectIFM > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                                {prospectStatus}
+                                            </p>
+                                        )}
                                     </div>
                                 )}
 
@@ -392,7 +445,7 @@ const SimulationPage = () => {
                                 {formData.es_integrador && (
                                     <div className="animate-in slide-in-from-top-2 duration-300">
                                         <CustomSelect label="Categoría Integrador" value={formData.categoria_integrador} onChange={(val) => handleCustomChange('categoria_integrador', val)} options={[{ id: 'Menores ingresos', label: 'Menores Ingresos' }, { id: 'Adulto mayor', label: 'Adulto Mayor' }, { id: 'Desplazados', label: 'Desplazados' }, { id: 'Miembros FF.AA.', label: 'FF.AA. / PNP' }]} />
-                                        {formData.categoria_integrador === 'Menores ingresos' && parseFloat(user?.ingreso_mensual || 0) > 4746 && (
+                                        {formData.categoria_integrador === 'Menores ingresos' && visualIFM > 4746 && (
                                             <p className="text-[8px] text-red-500 font-bold mt-1 bg-red-50 p-1.5 rounded-lg border border-red-100">Excede Ingresos (S/ 4,746)</p>
                                         )}
                                     </div>
@@ -475,8 +528,9 @@ const SimulationPage = () => {
                                 <div className="flex justify-between items-center"><p className="text-[8px] text-gray-400 uppercase font-black">(-) Bono BBP</p><p className="text-[11px] font-black text-emerald-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(formData.bono_bbp).toLocaleString()}</p></div>
                                 <div className="pt-2 border-t border-white/10 flex justify-between items-center"><p className="text-[8px] text-brand-blue-light uppercase font-black">Crédito Neto</p><p className="text-[12px] font-black text-brand-blue-light">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => { const p = parseFloat(selectedUnit?.precio_venta || 0); const b = parseFloat(formData.bono_bbp || 0); const val = parseFloat(formData.cuota_inicial || 0); const ini = cuotaType === 'porcentaje' ? (val / 100) * p : val; return (p - ini - b).toLocaleString(); })()}</p></div>
 
-                                <div className="flex justify-between items-center pt-1"><p className="text-[8px] text-gray-400 uppercase font-black">Ingreso Familiar (IFM)</p><p className="text-[11px] font-black text-white">S/ {(parseFloat(user?.ingreso_mensual || 0) + parseFloat(user?.ingreso_conyuge || 0)).toLocaleString()}</p></div>
-                                {parseFloat(user?.ingreso_conyuge || 0) > 0 && (
+                                <div className="flex justify-between items-center pt-1"><p className="text-[8px] text-gray-400 uppercase font-black">Ingreso Familiar (IFM)</p><p className="text-[11px] font-black text-white">S/ {visualIFM.toLocaleString()}</p></div>
+
+                                {userRole !== 'asesor' && parseFloat(user?.ingreso_conyuge || 0) > 0 && (
                                     <div className="flex justify-between items-center opacity-40 -mt-1"><p className="text-[6px] text-gray-300 uppercase font-bold tracking-tighter">└ T: S/ {parseFloat(user?.ingreso_mensual || 0).toLocaleString()} | C: S/ {parseFloat(user?.ingreso_conyuge || 0).toLocaleString()}</p></div>
                                 )}
                             </div>

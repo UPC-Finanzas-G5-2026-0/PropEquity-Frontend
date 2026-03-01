@@ -32,7 +32,9 @@ const Sidebar = () => {
     // 🏠 VITRINA PÚBLICA: Asesores y Clientes pueden ver y seleccionar propiedades
     { name: 'Catálogo', path: '/catalogo', roles: ['asesor', 'cliente'] },
 
-    { name: 'Simulaciones', path: '/simulador', roles: ['administrador', 'asesor', 'cliente'] },
+    // 🧮 SIMULADOR: 🚨 Solo para Asesores y Clientes (Removido el Administrador)
+    { name: 'Simulaciones', path: '/simulador', roles: ['asesor', 'cliente'] },
+
     { name: 'Mi Perfil', path: '/perfil', roles: ['cliente', 'asesor'] },
     { name: 'Configuración', path: '/configuracion', roles: ['administrador', 'asesor', 'cliente'] },
   ];
