@@ -53,10 +53,10 @@ const ClientDashboard = () => {
         fetchSimulations();
     }, []);
 
-    // Calcular KPIs
+    // 🚨 Calcular KPIs (Ajustado para leer 'resumen.monto_financiar')
     const totalSimulations = simulations.length;
     const avgFinanced = totalSimulations > 0
-        ? simulations.reduce((acc, sim) => acc + (sim.monto_financiamiento || 0), 0) / totalSimulations
+        ? simulations.reduce((acc, sim) => acc + parseFloat(sim.resumen?.monto_financiar || 0), 0) / totalSimulations
         : 0;
 
     const stats = [
@@ -116,7 +116,7 @@ const ClientDashboard = () => {
 
                 {/* Main Action CTA */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-                    <section className="relative overflow-hidden bg-brand-dark rounded-[3rem] p-12 text-white shadow-2xl shadow-brand-dark/20 group cursor-pointer" onClick={() => navigate('/simulation')}>
+                    <section className="relative overflow-hidden bg-brand-dark rounded-[3rem] p-12 text-white shadow-2xl shadow-brand-dark/20 group cursor-pointer" onClick={() => navigate('/simulador')}>
                         <div className="relative z-10">
                             <h2 className="text-3xl font-black mb-4 leading-tight max-w-xs">Simula tu cuota mensual ahora</h2>
                             <p className="text-gray-400 mb-8 font-medium text-sm max-w-sm">Aplica al Bono del Buen Pagador y obtén tasas preferenciales.</p>
@@ -151,7 +151,7 @@ const ClientDashboard = () => {
                             <h3 className="text-3xl font-black text-gray-900 tracking-tight">Mis Simulaciones</h3>
                             <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">Historial de simulaciones realizadas</p>
                         </div>
-                        <Link to="/simulation" className="bg-brand-orange px-6 py-3 rounded-xl font-black text-[10px] text-white uppercase tracking-widest hover:bg-orange-600 transition-all shadow-sm">
+                        <Link to="/simulador" className="bg-brand-orange px-6 py-3 rounded-xl font-black text-[10px] text-white uppercase tracking-widest hover:bg-orange-600 transition-all shadow-sm">
                             + Nueva Simulación
                         </Link>
                     </div>
@@ -174,7 +174,7 @@ const ClientDashboard = () => {
                             <ReceiptLongIcon sx={{ fontSize: 60 }} className="text-gray-300 mb-4" />
                             <h4 className="text-xl font-bold text-gray-700 mb-2">No tienes simulaciones aún</h4>
                             <p className="text-gray-500 mb-6">Crea tu primera simulación para ver tu cronograma de pagos.</p>
-                            <Link to="/simulation" className="inline-flex items-center gap-2 bg-brand-orange text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-600 transition-all">
+                            <Link to="/simulador" className="inline-flex items-center gap-2 bg-brand-orange text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-600 transition-all">
                                 Crear Simulación <ArrowForwardIcon />
                             </Link>
                         </div>
@@ -183,45 +183,56 @@ const ClientDashboard = () => {
                             <div className="overflow-x-auto">
                                 <table className="w-full">
                                     <thead className="bg-gray-50 border-b border-gray-100">
-                                        <tr>
-                                            <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">ID</th>
-                                            <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Propiedad</th>
-                                            <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Monto Financiado</th>
-                                            <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Cuota Mensual</th>
-                                            <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Plazo</th>
-                                            <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Fecha</th>
-                                            <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Acciones</th>
-                                        </tr>
+                                    <tr>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">ID</th>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Propiedad</th>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Monto Financiado</th>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Cuota Mensual</th>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Plazo</th>
+                                        <th className="px-6 py-4 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Fecha</th>
+                                        <th className="px-6 py-4 text-center text-[10px] font-black text-gray-400 uppercase tracking-widest">Acciones</th>
+                                    </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50">
-                                        {simulations.map((sim) => (
-                                            <tr key={sim.codigo_simulacion} className="hover:bg-gray-50 transition-colors">
-                                                <td className="px-6 py-4 text-sm font-bold text-gray-900">#{sim.codigo_simulacion}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">{sim.direccion_unidad || 'N/A'}</td>
-                                                <td className="px-6 py-4 text-sm font-bold text-brand-blue">{formatCurrency(sim.monto_financiamiento || 0)}</td>
-                                                <td className="px-6 py-4 text-sm font-bold text-brand-orange">{formatCurrency(sim.cuota_mensual || 0)}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">{sim.plazo_meses} meses</td>
-                                                <td className="px-6 py-4 text-sm text-gray-500">{formatDate(sim.fecha_simulacion)}</td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center justify-center gap-2">
-                                                        <button
-                                                            onClick={() => navigate(`/simulation/${sim.codigo_simulacion}`)}
-                                                            className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                                                            title="Ver Detalles"
-                                                        >
-                                                            <VisibilityIcon fontSize="small" />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleExportExcel(sim.codigo_simulacion)}
-                                                            className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
-                                                            title="Exportar Excel"
-                                                        >
-                                                            <DownloadIcon fontSize="small" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                    {simulations.map((sim) => (
+                                        <tr key={sim.codigo_simulacion} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4 text-sm font-bold text-gray-900">#{sim.codigo_simulacion}</td>
+
+                                            {/* 🚨 CORRECCIONES APLICADAS AQUÍ */}
+                                            <td className="px-6 py-4 text-sm text-gray-600">
+                                                {sim.unidad_rel?.direccion_unidad || `Unidad #${sim.codigo_unidad}`}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm font-bold text-brand-blue">
+                                                {formatCurrency(sim.resumen?.monto_financiar || 0)}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm font-bold text-brand-orange">
+                                                {formatCurrency(sim.detalles?.[1]?.cuota_total || sim.detalles?.[0]?.cuota_total || sim.resumen?.cuota_base || 0)}
+                                            </td>
+                                            {/* ------------------------------- */}
+
+                                            <td className="px-6 py-4 text-sm text-gray-600">{sim.plazo_meses} meses</td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">{formatDate(sim.fecha_simulacion)}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    {/* Ruta corregida a /simulador/detalle/ */}
+                                                    <button
+                                                        onClick={() => navigate(`/simulador/detalle/${sim.codigo_simulacion}`)}
+                                                        className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                                                        title="Ver Detalles"
+                                                    >
+                                                        <VisibilityIcon fontSize="small" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleExportExcel(sim.codigo_simulacion)}
+                                                        className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors"
+                                                        title="Exportar Excel"
+                                                    >
+                                                        <DownloadIcon fontSize="small" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
                                     </tbody>
                                 </table>
                             </div>
