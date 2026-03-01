@@ -12,7 +12,8 @@ import SettingsPage from './pages/SettingsPage';
 import AdvisorDashboard from "./pages/AdvisorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import PropertyCatalogPage from "./pages/PropertyCatalog";
-import ClientCatalogPage from "./pages/ClientCatalogPage"; // 🚨 Importamos el nuevo catálogo del cliente
+import ClientCatalogPage from "./pages/ClientCatalogPage";
+import ClientSimulationsPage from "./pages/ClientSimulationsPage"; // 🚨 Importamos el nuevo catálogo del cliente
 
 const CatalogRouter = () => {
   const { user } = useAuth();
@@ -42,6 +43,7 @@ function App() {
           {/*  Rutas Privadas - Asesor */}
           <Route path="/asesor/dashboard" element={<AdvisorDashboard />} />
           <Route path="/clientes" element={<AdvisorDashboard />} />
+          <Route path="/simulations/client/:id" element={<ClientSimulationsPage />} />
 
           {/*  Rutas Privadas - Cliente */}
           <Route path="/cliente/dashboard" element={<ClientDashboard />} />
