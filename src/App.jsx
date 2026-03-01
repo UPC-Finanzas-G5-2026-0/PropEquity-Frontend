@@ -13,7 +13,8 @@ import AdvisorDashboard from "./pages/AdvisorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import PropertyCatalogPage from "./pages/PropertyCatalog";
 import ClientCatalogPage from "./pages/ClientCatalogPage";
-import ClientSimulationsPage from "./pages/ClientSimulationsPage"; // 🚨 Importamos el nuevo catálogo del cliente
+import ClientSimulationsPage from "./pages/ClientSimulationsPage";
+import SimulationDetailPage from "./pages/SimulationDetailPage"; // 🚨 Importamos el nuevo catálogo del cliente
 
 const CatalogRouter = () => {
   const { user } = useAuth();
@@ -56,6 +57,8 @@ function App() {
           <Route path="/simulador" element={<SimulationPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/configuracion" element={<SettingsPage />} />
+
+          <Route path="/simulador/detalle/:id" element={<SimulationDetailPage />} />
 
           {/* Ruta fallback para el dashboard genérico */}
           <Route path="/dashboard" element={<AdvisorDashboard />} />

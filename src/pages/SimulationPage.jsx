@@ -24,6 +24,7 @@ const SimulationPage = () => {
     const userRole = (user?.rol_rel?.tipo_rol || user?.role || user?.rol || '').toLowerCase();
     const userId = user?.codigo_usuario || user?.id;
     const unidadPreseleccionada = location.state?.unidadSeleccionada;
+    const clientePreseleccionado = location.state?.clientePreseleccionado;
 
     const [units, setUnits] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -49,7 +50,7 @@ const SimulationPage = () => {
 
     const [formData, setFormData] = useState({
         codigo_unidad: unidadPreseleccionada ? String(unidadPreseleccionada.codigo_unidad) : '',
-        codigo_prospecto: '',
+        codigo_prospecto: clientePreseleccionado ? String(clientePreseleccionado) : '',
         cuota_inicial: '10',
         gastos_tasacion: '250',
         gastos_notariales: '1200',
