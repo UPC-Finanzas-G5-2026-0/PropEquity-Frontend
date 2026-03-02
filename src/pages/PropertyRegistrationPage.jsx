@@ -10,6 +10,15 @@ import { useAuth } from '../context/AuthContext';
 import { createUnit, getUnits, updateUnit, deleteUnit } from '../services/unitService';
 import CustomSelect from '../components/CustomSelect';
 
+// 🚨 NUEVA FUNCIÓN: Procesador inteligente de URLs de imágenes
+const getImageUrl = (fotoPath) => {
+    if (!fotoPath) return null; // Si no hay foto, retorna null para que tu código muestre el ícono de Location
+    if (fotoPath.startsWith('http')) return fotoPath; // Si es de Cloudinary, pasa directo
+
+    // Si tienes fotos locales antiguas, pon aquí la URL de tu backend en Render
+    return `https://tu-backend.onrender.com${fotoPath}`;
+};
+
 // Todos los distritos de Lima Metropolitana
 const DISTRITOS_LIMA = [
     'Ate', 'Barranco', 'Breña', 'Carabayllo', 'Cercado de Lima', 'Chaclacayo', 'Chorrillos',
@@ -102,8 +111,11 @@ const PropertyRegistrationPage = () => {
         setEditingId(id);
         setFotoRemoved(false);
         setFormData(mapPropFromApi(prop));
-        if (prop.foto) setPreview(`http://localhost:8000${prop.foto}`);
+
+        // 🚨 CAMBIO APLICADO AQUÍ: Usamos getImageUrl para previsualizar al editar
+        if (prop.foto) setPreview(getImageUrl(prop.foto));
         else setPreview(null);
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -137,7 +149,6 @@ const PropertyRegistrationPage = () => {
         const precioVal = parseFloat(formData.precio);
         const areaVal = parseFloat(formData.area);
 
-        // Validaciones básicas
         if (!formData.direccion || !formData.distrito || isNaN(precioVal) || isNaN(areaVal)) {
             alert("Completa todos los campos obligatorios.");
             return;
@@ -147,13 +158,11 @@ const PropertyRegistrationPage = () => {
             return;
         }
 
-        // Validación de certificación sostenible requerida
         if (formData.es_sostenible === true && !formData.certificacion_sostenible) {
             alert("Las viviendas sostenibles requieren especificar una certificación (EDGE, LEED, etc.).");
             return;
         }
 
-        // Validación de Foto (Máx 5MB y extensiones permitidas)
         if (formData.foto instanceof File) {
             const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
             if (!allowedTypes.includes(formData.foto.type)) {
@@ -166,8 +175,7 @@ const PropertyRegistrationPage = () => {
             }
         }
 
-        // Restricción de rango MiVivienda (PEN y USD)
-        const TC = 3.75; // Tipo de cambio referencial
+        const TC = 3.75;
         let precioEnSoles = precioVal;
         if (formData.moneda === 'USD') {
             precioEnSoles = precioVal * TC;
@@ -182,7 +190,6 @@ const PropertyRegistrationPage = () => {
             }
         }
 
-        // Mapeo: strings del frontend → códigos enteros del backend
         const MONEDA_MAP = { PEN: 1, USD: 2 };
         const MODALIDAD_MAP = { Compra: 1, Construccion: 2, Mejoramiento: 3 };
         const TIPO_VENTA_MAP = { 'Primera venta': 1, 'Segunda venta': 2 };
@@ -190,7 +197,6 @@ const PropertyRegistrationPage = () => {
 
         setLoading(true);
         try {
-            // ARMAMOS EL PAYLOAD ESTRICTAMENTE CON LO QUE ESPERA EL BACKEND (schema/unit.py)
             const unitPayload = {
                 direccion_unidad: formData.direccion,
                 distrito_unidad: formData.distrito,
@@ -203,12 +209,10 @@ const PropertyRegistrationPage = () => {
                 foto: formData.foto
             };
 
-            // Solo enviamos codigo_tipo_venta si aplica (Compra)
             if (formData.modalidad_vivienda === 'Compra') {
                 unitPayload.codigo_tipo_venta = TIPO_VENTA_MAP[formData.tipo_venta] ?? 1;
             }
 
-            // Si estamos editando y se borró la foto, mandamos la bandera al unitService
             if (editingId && fotoRemoved) {
                 unitPayload.remove_foto = true;
             }
@@ -234,7 +238,6 @@ const PropertyRegistrationPage = () => {
             setLoading(false);
         }
     };
-
 
     return (
         <div className="flex bg-[#F8FAFC] min-h-screen font-['Inter',_sans-serif]">
@@ -381,10 +384,6 @@ const PropertyRegistrationPage = () => {
                                     <Tooltip
                                         title="Define si la vivienda aplica al Bono Buen Pagador (BBP) del Fondo MiVivienda y de qué tipo."
                                         arrow placement="top" enterDelay={150}
-                                        componentsProps={{
-                                            tooltip: { sx: { bgcolor: 'white', color: '#334155', border: '1px solid #e2e8f0', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', fontSize: '12px', fontWeight: 500, lineHeight: 1.6, px: 2, py: 1.5, borderRadius: '14px', maxWidth: 240 } },
-                                            arrow: { sx: { color: 'white', '&::before': { border: '1px solid #e2e8f0' } } },
-                                        }}
                                     >
                                         <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#EFF6FF', border: '1.5px solid #93C5FD', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                             <span style={{ fontSize: 9, fontWeight: 700, color: '#3B82F6', lineHeight: 1 }}>?</span>
@@ -418,7 +417,6 @@ const PropertyRegistrationPage = () => {
                                         );
                                     })}
                                 </div>
-                                {/* Campo certificación solo si es sostenible */}
                                 {formData.es_sostenible === true && (
                                     <div className="mt-3 animate-in fade-in duration-300 space-y-2">
                                         <CustomSelect
@@ -436,38 +434,6 @@ const PropertyRegistrationPage = () => {
                                         {!formData.certificacion_sostenible && (
                                             <p className="text-[8px] font-semibold text-red-400 ml-1">⚠ Requerido para vivienda sostenible</p>
                                         )}
-
-                                        {/* Campos opcionales de ahorro - inline */}
-                                        <div className="flex gap-3 items-end">
-                                            <div className="flex-1">
-                                                <label className="block text-[7px] font-bold text-gray-400 uppercase mb-0.5 ml-1">Ahorro Energía (%)</label>
-                                                <input
-                                                    name="ahorro_energia"
-                                                    value={formData.ahorro_energia}
-                                                    onChange={handleChange}
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    step="0.1"
-                                                    placeholder="Opcional"
-                                                    className="w-full bg-gray-50 border border-gray-100 rounded-lg py-1.5 px-2 text-xs font-semibold text-gray-700 focus:outline-none focus:border-green-400"
-                                                />
-                                            </div>
-                                            <div className="flex-1">
-                                                <label className="block text-[7px] font-bold text-gray-400 uppercase mb-0.5 ml-1">Ahorro Agua (%)</label>
-                                                <input
-                                                    name="ahorro_agua"
-                                                    value={formData.ahorro_agua}
-                                                    onChange={handleChange}
-                                                    type="number"
-                                                    min="0"
-                                                    max="100"
-                                                    step="0.1"
-                                                    placeholder="Opcional"
-                                                    className="w-full bg-gray-50 border border-gray-100 rounded-lg py-1.5 px-2 text-xs font-semibold text-gray-700 focus:outline-none focus:border-green-400"
-                                                />
-                                            </div>
-                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -482,16 +448,12 @@ const PropertyRegistrationPage = () => {
                                     showInfo={true}
                                     options={[{ id: 'Compra', label: 'Compra' }, { id: 'Construccion', label: 'Construcción' }, { id: 'Mejoramiento', label: 'Mejoramiento' }]}
                                 />
-                                {/* Info cuota inicial mínima */}
                                 <div className="mt-1.5 flex items-center gap-1.5 ml-1">
                                     <InfoOutlinedIcon sx={{ fontSize: 10, color: '#94a3b8' }} />
                                     <span className="text-[7px] font-semibold text-gray-400">
                                         Cuota inicial mín: {formData.modalidad_vivienda === 'Compra' ? '10%' : '7.5%'} del precio
                                     </span>
                                 </div>
-                                {formData.modalidad_vivienda === 'Mejoramiento' && (
-                                    <p className="text-[7px] text-amber-500 font-semibold mt-1 ml-1">⚠ Mejoramiento no aplica a BBP</p>
-                                )}
                             </div>
                             {formData.modalidad_vivienda === 'Compra' ? (
                                 <CustomSelect
@@ -504,16 +466,6 @@ const PropertyRegistrationPage = () => {
                             ) : (
                                 <div className="flex items-center justify-center bg-gray-50 rounded-2xl border border-dashed border-gray-200 p-3">
                                     <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">No aplica</span>
-                                </div>
-                            )}
-
-                            {/* Aviso BBP Segunda Venta */}
-                            {formData.tipo_venta === 'Segunda venta' && (
-                                <div className="col-span-2 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2 animate-in fade-in duration-300">
-                                    <span className="text-amber-500 text-sm">⚠</span>
-                                    <p className="text-[9px] font-semibold text-amber-700">
-                                        <strong>Aviso:</strong> Las viviendas de segunda venta NO califican para el Bono del Buen Pagador (BBP) según normativa FMV.
-                                    </p>
                                 </div>
                             )}
                         </div>
@@ -546,7 +498,6 @@ const PropertyRegistrationPage = () => {
                                         <CloudUploadOutlinedIcon sx={{ fontSize: 32, mb: 1 }} />
                                         <span className="font-black text-xs bg-white/20 px-6 py-2 rounded-full backdrop-blur-md">Cambiar Foto</span>
                                     </div>
-                                    {/* Botón eliminar foto */}
                                     <button
                                         type="button"
                                         onClick={(e) => {
@@ -576,15 +527,12 @@ const PropertyRegistrationPage = () => {
                     </div>
                 </div>
 
-                {/* LISTADO DE PROPIEDADES MEJORADO */}
+                {/* LISTADO DE PROPIEDADES */}
                 <div className="border-t border-gray-100 pt-10">
                     <div className="flex justify-between items-center mb-5">
                         <div>
                             <h2 className="text-lg font-black text-gray-900 tracking-tight">Inventario Actual</h2>
                             <p className="text-gray-400 font-bold text-[10px] uppercase tracking-widest mt-0.5">{properties.length} unidades encontradas</p>
-                        </div>
-                        <div className="flex gap-4">
-                            {/* Aquí podrían ir filtros en el futuro */}
                         </div>
                     </div>
 
@@ -597,13 +545,20 @@ const PropertyRegistrationPage = () => {
                             {properties.map((prop) => (
                                 <div key={prop.codigo_unidad} className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 group">
                                     <div className="h-56 bg-gray-100 relative overflow-hidden">
-                                        {prop.foto ? (
-                                            <img src={`http://localhost:8000${prop.foto}`} alt={prop.direccion_unidad} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+
+                                        {/* 🚨 CAMBIO APLICADO AQUÍ: Usamos getImageUrl para la imagen de la tarjeta */}
+                                        {getImageUrl(prop.foto) ? (
+                                            <img
+                                                src={getImageUrl(prop.foto)}
+                                                alt={prop.direccion_unidad}
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                            />
                                         ) : (
                                             <div className="w-full h-full flex items-center justify-center text-gray-200">
                                                 <LocationOnIcon sx={{ fontSize: 60 }} />
                                             </div>
                                         )}
+
                                         <div className="absolute top-4 left-4 flex flex-col gap-2">
                                             {(() => {
                                                 const isActivo = prop.codigo_estado === 1;
@@ -637,8 +592,6 @@ const PropertyRegistrationPage = () => {
                                             </div>
                                         </div>
 
-
-
                                         <div className="flex gap-3">
                                             <button
                                                 onClick={() => handleEdit(prop)}
@@ -660,7 +613,7 @@ const PropertyRegistrationPage = () => {
                     )}
                 </div>
             </main>
-        </div >
+        </div>
     );
 };
 
