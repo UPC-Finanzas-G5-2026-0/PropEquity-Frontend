@@ -57,6 +57,7 @@ function App() {
           <Route path="/simulador" element={<SimulationPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/configuracion" element={<SettingsPage />} />
+          <Route path="/simulaciones/:id" element={<SimulationDetailPage />} />
 
           <Route path="/simulador/detalle/:id" element={<SimulationDetailPage />} />
 
