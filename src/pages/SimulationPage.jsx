@@ -106,7 +106,7 @@ const SimulationPage = () => {
                     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
                     // 🚨 REEMPLAZA ESTO POR LA URL REAL DE TU BACKEND EN RENDER 🚨
-                    const API_URL = 'https://pon-tu-url-real-aqui.onrender.com';
+                    const API_URL = 'https://propequity-backend.onrender.com';
 
                     const response = await fetch(`https://propequity-backend.onrender.com/api/v1/simulator/check-income/${formData.codigo_prospecto}`, {
                         headers: {
