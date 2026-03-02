@@ -16,7 +16,7 @@ import CustomSelect from '../components/CustomSelect';
 const SimulationPage = () => {
     const { user } = useAuth();
     const location = useLocation();
-    const navigate = useNavigate(); // 🚨 NUEVO: Para redirigir a la otra página
+    const navigate = useNavigate();
 
     const userRole = (user?.rol_rel?.tipo_rol || user?.role || user?.rol || '').toLowerCase();
     const userId = user?.codigo_usuario || user?.id;
@@ -28,7 +28,6 @@ const SimulationPage = () => {
     const [serverError, setServerError] = useState(null);
     const [cuotaType, setCuotaType] = useState('porcentaje');
 
-    // ESTADOS PARA BÚSQUEDA EN VIVO: IFM y Status
     const [prospectIFM, setProspectIFM] = useState(0);
     const [prospectStatus, setProspectStatus] = useState('');
 
@@ -105,7 +104,11 @@ const SimulationPage = () => {
                 setProspectStatus('Buscando...');
                 try {
                     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-                    const response = await fetch(`https://tu-backend.onrender.com/api/v1/simulator/check-income/${formData.codigo_prospecto}`, {
+
+                    // 🚨 REEMPLAZA ESTO POR LA URL REAL DE TU BACKEND EN RENDER 🚨
+                    const API_URL = 'https://pon-tu-url-real-aqui.onrender.com';
+
+                    const response = await fetch(`https://propequity-backend.onrender.com/api/v1/simulator/check-income/${formData.codigo_prospecto}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
@@ -270,9 +273,6 @@ const SimulationPage = () => {
 
             const response = await createSimulation(payload);
             if (response.success) {
-                // 🚨 MAGIA AQUÍ: Te lleva directo a la otra página con el detalle completo
-                // OJO: Asegúrate de que la ruta sea '/simulaciones/:id' en tu App.js.
-                // Si la llamaste diferente (ej: '/simulacion/123'), cámbiala aquí.
                 navigate(`/simulaciones/${response.data.codigo_simulacion}`);
             } else {
                 setServerError({ titulo: getErrorTitle(response.error), mensaje: response.error });
@@ -299,6 +299,7 @@ const SimulationPage = () => {
         <div className="flex bg-[#F8FAFC] min-h-screen font-['Inter',_sans-serif]">
             <Sidebar />
             <main className="flex-1 p-6 lg:p-10 overflow-y-auto bg-gray-50/50 flex flex-col">
+                {/* 🚨 TEXTOS DEL HEADER AUMENTADOS */}
                 <header className="mb-6 flex justify-between items-center bg-white p-6 rounded-2xl border border-gray-100 shadow-sm shrink-0">
                     <div>
                         <h1 className="text-4xl font-black text-gray-900 tracking-tighter leading-none">Simulador PropEquity</h1>
