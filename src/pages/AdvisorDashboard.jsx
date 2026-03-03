@@ -75,7 +75,7 @@ const AdvisorDashboard = () => {
           <header className="mb-12 flex justify-between items-end">
             <div>
               <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2">
-                ¡Hola, Asesor {user?.nombres || ''}! 💼
+                ¡Hola, Asesor {user?.nombres || ''}!
               </h1>
               <p className="text-gray-500 text-lg font-medium">Gestiona tu cartera de prospectos y clientes.</p>
             </div>
