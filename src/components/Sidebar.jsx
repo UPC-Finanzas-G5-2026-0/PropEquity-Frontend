@@ -8,7 +8,6 @@ const Sidebar = () => {
   const navigate = useNavigate();
 
   // 1. Normalizamos el rol a minúsculas para evitar fallos por mayúsculas
-  // Añadimos la lectura de 'rol_rel.tipo_rol' que es como lo envía tu backend de FastAPI
   const rawRole = user?.rol_rel?.tipo_rol || user?.role || user?.rol || '';
   const currentRole = rawRole.toLowerCase();
 
@@ -26,11 +25,14 @@ const Sidebar = () => {
   const allMenuItems = [
     { name: 'Inicio', path: getHomePath(currentRole), roles: ['administrador', 'asesor', 'cliente'] },
 
-    //  Solo 'administrador' puede ver Propiedades 👇
+    // Solo administrador ve Propiedades
     { name: 'Propiedades', path: '/propiedades', roles: ['administrador'] },
 
     { name: 'Catálogo', path: '/catalogo', roles: ['administrador', 'asesor', 'cliente'] },
-    { name: 'Simulaciones', path: '/simulador', roles: ['administrador', 'asesor', 'cliente'] },
+
+    // Quitamos 'administrador' de Simulaciones
+    { name: 'Simulaciones', path: '/simulador', roles: ['asesor', 'cliente'] },
+
     { name: 'Mi Perfil', path: '/perfil', roles: ['cliente', 'asesor'] },
     { name: 'Configuración', path: '/configuracion', roles: ['administrador', 'asesor', 'cliente'] },
   ];
