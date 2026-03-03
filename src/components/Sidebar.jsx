@@ -7,7 +7,7 @@ const Sidebar = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
 
-  // 1. Normalizamos el rol a minúsculas para evitar fallos por mayúsculas
+  // 1. Normalizamos el rol a minúsculas
   const rawRole = user?.rol_rel?.tipo_rol || user?.role || user?.rol || '';
   const currentRole = rawRole.toLowerCase();
 
@@ -21,23 +21,24 @@ const Sidebar = () => {
     }
   };
 
-  // 3. Definimos el menú con los accesos estrictos
+  // 3. Definimos el menú con los accesos restringidos
   const allMenuItems = [
     { name: 'Inicio', path: getHomePath(currentRole), roles: ['administrador', 'asesor', 'cliente'] },
 
-    // Solo administrador ve Propiedades
+    // Solo administrador ve Propiedades (Registro)
     { name: 'Propiedades', path: '/propiedades', roles: ['administrador'] },
 
-    { name: 'Catálogo', path: '/catalogo', roles: ['administrador', 'asesor', 'cliente'] },
+    //  CAMBIO: Quitamos 'administrador' del Catálogo
+    { name: 'Catálogo', path: '/catalogo', roles: ['asesor', 'cliente'] },
 
-    // Quitamos 'administrador' de Simulaciones
+    // Simulaciones (Solo para asesores y clientes)
     { name: 'Simulaciones', path: '/simulador', roles: ['asesor', 'cliente'] },
 
     { name: 'Mi Perfil', path: '/perfil', roles: ['cliente', 'asesor'] },
     { name: 'Configuración', path: '/configuracion', roles: ['administrador', 'asesor', 'cliente'] },
   ];
 
-  // Filtramos los ítems exactos para el rol del usuario que inició sesión
+  // Filtramos los ítems exactos para el rol del usuario
   const menuItems = allMenuItems.filter(item => item.roles.includes(currentRole));
 
   const handleLogout = () => {
