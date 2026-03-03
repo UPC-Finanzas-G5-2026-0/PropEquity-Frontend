@@ -767,22 +767,49 @@ const SimulationPage = () => {
                 {
                     result && (
                         <div id="simulation-result" className="animate-in fade-in slide-in-from-bottom-5 duration-700">
+                            {/* ── Indicadores de Rentabilidad ── */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                                <div className="col-span-2 md:col-span-4 flex items-center gap-2 mb-1">
+                                    <div className="w-1 h-3 bg-[#F97316] rounded-full"></div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Indicadores de Rentabilidad</p>
+                                </div>
                                 {[
-                                    { label: 'Monto a Financiar', value: `${selectedUnit?.moneda === 2 ? '$' : 'S/'} ${parseFloat(result.resumen?.monto_financiar || 0).toFixed(2)}`, icon: <PaymentsIcon sx={{ fontSize: 18 }} /> },
-                                    { label: 'Cuota Mensual', value: `${selectedUnit?.moneda === 2 ? '$' : 'S/'} ${parseFloat(result.resumen?.cuota_base || 0).toFixed(2)}`, icon: <ShowChartIcon sx={{ fontSize: 18 }} /> },
-                                    { label: 'TEA', value: `${parseFloat(result.resumen?.tasa_efectiva_anual || result.tea || 0).toFixed(2)}%`, icon: <QueryStatsIcon sx={{ fontSize: 18 }} /> },
-                                    { label: 'Interés', value: `${selectedUnit?.moneda === 2 ? '$' : 'S/'} ${parseFloat(result.resumen?.total_intereses || 0).toFixed(2)}`, icon: <QueryStatsIcon sx={{ fontSize: 18 }} /> }
+                                    {
+                                        label: 'Tasa de Descuento',
+                                        sublabel: 'TCEA anualizada',
+                                        value: `${parseFloat(result.resumen?.tcea || 0).toFixed(4)}%`,
+                                        accent: '#3B82F6'
+                                    },
+                                    {
+                                        label: 'TIR Mensual',
+                                        sublabel: 'Tasa Interna de Retorno',
+                                        value: `${parseFloat(result.resumen?.tir || 0).toFixed(6)}%`,
+                                        accent: '#10B981'
+                                    },
+                                    {
+                                        label: 'TCEA',
+                                        sublabel: 'Costo Efectivo Anual',
+                                        value: `${parseFloat(result.resumen?.tcea || 0).toFixed(4)}%`,
+                                        accent: '#F97316'
+                                    },
+                                    {
+                                        label: 'VAN',
+                                        sublabel: 'Valor Actual Neto',
+                                        value: `S/ ${parseFloat(result.resumen?.van || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                                        accent: parseFloat(result.resumen?.van || 0) >= 0 ? '#10B981' : '#EF4444'
+                                    }
                                 ].map((stat, i) => (
-                                    <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all group">
-                                        <div className="text-brand-blue/30 group-hover:text-brand-blue transition-colors">{stat.icon}</div>
-                                        <div>
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1.5">{stat.label}</p>
-                                            <p className="text-base font-black text-gray-900 leading-none">{stat.value}</p>
+                                    <div key={i} className="bg-[#0F172A] p-4 rounded-2xl border border-white/5 flex items-center gap-4 hover:border-white/10 transition-all group">
+                                        <div className="w-0.5 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: stat.accent }}></div>
+                                        <div className="min-w-0">
+                                            <p className="text-[9px] font-black text-white/30 uppercase tracking-widest leading-none mb-0.5">{stat.label}</p>
+                                            <p className="text-[8px] font-bold text-white/20 uppercase leading-none mb-1.5">{stat.sublabel}</p>
+                                            <p className="text-sm font-black leading-none truncate" style={{ color: stat.accent }}>{stat.value}</p>
                                         </div>
                                     </div>
                                 ))}
                             </div>
+
                             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                                 <div className="p-4 border-b border-gray-50 flex justify-between items-center">
                                     <h3 className="text-xs font-black text-gray-900 uppercase tracking-tighter">Cronograma de Pagos</h3>
