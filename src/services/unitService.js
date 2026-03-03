@@ -21,14 +21,29 @@ const extractFastAPIError = (error, defaultMessage = 'Error en la operación') =
 };
 
 // Listar unidades disponibles
-export const getUnits = async (skip = 0, limit = 100) => {
+export const getUnits = async (skip = 0, limit = 100, soloMias = false, soloMisYFavoritos = false) => {
     try {
         const response = await api.get('/units/', {
-            params: { skip, limit }
+            params: {
+                skip,
+                limit,
+                ...(soloMias && { solo_mias: true }),
+                ...(soloMisYFavoritos && { solo_mis_y_favoritos: true })
+            }
         });
         return { success: true, data: response.data };
     } catch (error) {
         return { success: false, error: 'Error al cargar unidades' };
+    }
+};
+
+// Toggle favorito
+export const toggleUnitFavorite = async (id) => {
+    try {
+        const response = await api.post(`/units/${id}/favorite`);
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: 'Error al actualizar favoritos' };
     }
 };
 

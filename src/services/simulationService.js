@@ -1,9 +1,9 @@
 import api from './api';
 
-// Crear simulación
-export const createSimulation = async (simulationData) => {
+// Crear simulación (save=false: solo preview, save=true: persiste en BD)
+export const createSimulation = async (simulationData, save = false) => {
     try {
-        const response = await api.post('/simulator/', simulationData);
+        const response = await api.post(`/simulator/?save=${save}`, simulationData);
         return { success: true, data: response.data };
     } catch (error) {
         const errorDetail = error.response?.data?.detail;
@@ -58,26 +58,28 @@ export const exportToExcel = async (id) => {
             responseType: 'blob'
         });
 
-        // Crear enlace de descarga
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
-
-        // Obtener nombre del archivo desde headers o usar uno por defecto
         const contentDisposition = response.headers['content-disposition'];
         const filename = contentDisposition
             ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
             : `simulacion_${id}.xlsx`;
-
         link.setAttribute('download', filename);
         document.body.appendChild(link);
         link.click();
         link.remove();
         window.URL.revokeObjectURL(url);
-
         return { success: true };
     } catch (error) {
-        return { success: false, error: 'Error al exportar a Excel' };
+        // Intentar leer el detalle del error aunque la respuesta sea blob
+        let msg = 'Error al exportar a Excel';
+        try {
+            const text = await error.response?.data?.text();
+            const parsed = JSON.parse(text);
+            msg = parsed?.detail || msg;
+        } catch { }
+        return { success: false, error: msg };
     }
 };
 
@@ -88,26 +90,27 @@ export const exportToPDF = async (id) => {
             responseType: 'blob'
         });
 
-        // Crear enlace de descarga
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
-
-        // Obtener nombre del archivo desde headers o usar uno por defecto
         const contentDisposition = response.headers['content-disposition'];
         const filename = contentDisposition
             ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
             : `simulacion_${id}.pdf`;
-
         link.setAttribute('download', filename);
         document.body.appendChild(link);
         link.click();
         link.remove();
         window.URL.revokeObjectURL(url);
-
         return { success: true };
     } catch (error) {
-        return { success: false, error: 'Error al exportar a PDF' };
+        let msg = 'Error al exportar a PDF';
+        try {
+            const text = await error.response?.data?.text();
+            const parsed = JSON.parse(text);
+            msg = parsed?.detail || msg;
+        } catch { }
+        return { success: false, error: msg };
     }
 };
 

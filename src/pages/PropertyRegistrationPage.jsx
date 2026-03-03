@@ -61,7 +61,7 @@ const PropertyRegistrationPage = () => {
 
     const fetchProperties = async () => {
         try {
-            const response = await getUnits();
+            const response = await getUnits(0, 100, true); // solo_mias=true: cada usuario ve sus propias unidades
             if (response.success) {
                 setProperties(response.data);
             }
@@ -183,7 +183,7 @@ const PropertyRegistrationPage = () => {
 
         if (precioEnSoles < 68800 || precioEnSoles > 488800) {
             const rangoMsg = formData.moneda === 'USD'
-                ? `$ ${(68800/TC).toLocaleString(undefined, {maximumFractionDigits: 0})} - $ ${(488800/TC).toLocaleString(undefined, {maximumFractionDigits: 0})}`
+                ? `$ ${(68800 / TC).toLocaleString(undefined, { maximumFractionDigits: 0 })} - $ ${(488800 / TC).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
                 : 'S/ 68,800 - S/ 488,800';
             if (!window.confirm(`El precio está fuera del rango del programa MiVivienda (${rangoMsg}). ¿Deseas continuar?`)) {
                 return;
@@ -244,7 +244,7 @@ const PropertyRegistrationPage = () => {
             <Sidebar />
             <main className="flex-1 p-6 overflow-y-auto">
                 <header className="mb-6">
-                    <h1 className="text-2xl font-black text-gray-900 mb-1 tracking-tight">Gestión del Inventario</h1>
+                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">Propiedades</h1>
                     <p className="text-gray-500 text-sm font-medium">Registra y administra las unidades inmobiliarias.</p>
                 </header>
 
@@ -259,18 +259,18 @@ const PropertyRegistrationPage = () => {
                                 {editingId ? 'Editar Propiedad' : 'Nueva Unidad'}
                             </h2>
                             {editingId && (
-                                <button onClick={handleCancelEdit} className="text-[9px] font-black text-red-400 hover:text-red-500 uppercase tracking-widest px-3 py-1.5 bg-red-50 rounded-full transition-all">Cancelar</button>
+                                <button onClick={handleCancelEdit} className="text-[10px] font-black text-red-500 hover:text-red-600 uppercase tracking-widest px-4 py-2 bg-red-50 rounded-full transition-all border border-red-100/50">Cancelar Edición</button>
                             )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                             {/* DIRECCIÓN */}
                             <div className="col-span-2">
-                                <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Dirección Exacta</label>
+                                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Dirección Exacta</label>
                                 <input
                                     name="direccion" value={formData.direccion} onChange={handleChange}
                                     type="text" placeholder="Ej: Av. Principal 456"
-                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 focus:outline-none focus:border-blue-400 font-semibold text-gray-700 text-sm transition-all"
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 font-bold text-gray-700 text-sm transition-all"
                                 />
                             </div>
 
@@ -345,7 +345,7 @@ const PropertyRegistrationPage = () => {
 
                                     return (
                                         <p className="text-[7px] font-semibold text-green-600 ml-1">
-                                            ✓ Rango {rango} {formData.moneda === 'USD' && `(≈ S/ ${precioSoles.toLocaleString(undefined, {maximumFractionDigits: 0})})`}
+                                            ✓ Rango {rango} {formData.moneda === 'USD' && `(≈ S/ ${precioSoles.toLocaleString(undefined, { maximumFractionDigits: 0 })})`}
                                         </p>
                                     );
                                 })()}
@@ -357,7 +357,7 @@ const PropertyRegistrationPage = () => {
                                 <div className={`bg-gray-50 border rounded-xl h-10 flex items-center transition-all ${formData.area !== '' && parseFloat(formData.area) <= 0
                                     ? 'border-red-300 bg-red-50'
                                     : 'border-gray-100'
-                                }`}>
+                                    }`}>
                                     <input
                                         name="area" value={formData.area}
                                         onChange={(e) => {

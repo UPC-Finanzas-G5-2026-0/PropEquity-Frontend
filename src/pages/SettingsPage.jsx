@@ -26,16 +26,19 @@ const SettingsPage = () => {
     return (
         <div className="flex bg-[#F8FAFC] min-h-screen font-['Inter',_sans-serif]">
             <Sidebar />
-            <main className="flex-1 p-8">
-                <header className="mb-8">
-                    <h1 className="text-3xl font-black text-gray-900 tracking-tight">Configuración</h1>
-                    <p className="text-gray-500 font-medium">Ajustes generales de tu cuenta.</p>
+            <main className="flex-1 p-6">
+                <header className="mb-6">
+                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">Configuraciones</h1>
+                    <p className="text-gray-500 text-sm font-medium">Ajustes generales de tu cuenta.</p>
                 </header>
 
-                <div className="grid gap-8 max-w-3xl">
+                <div className="grid gap-6 max-w-3xl">
                     {settingSections.map((section, idx) => (
-                        <div key={idx} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-8">
-                            <h3 className="text-lg font-black text-gray-900 mb-6 border-b border-gray-100 pb-2">{section.title}</h3>
+                        <div key={idx} className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+                            <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest mb-8 flex items-center gap-3">
+                                <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
+                                {section.title}
+                            </h3>
                             <div className="space-y-6">
                                 {section.items.map((item, itemIdx) => (
                                     <div key={itemIdx} className="flex items-center justify-between group">
@@ -43,14 +46,14 @@ const SettingsPage = () => {
                                             <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-brand-blue/10 group-hover:text-brand-blue transition-colors">
                                                 {item.icon}
                                             </div>
-                                            <span className="font-medium text-gray-700">{item.label}</span>
+                                            <span className="font-bold text-gray-800 text-sm">{item.label}</span>
                                         </div>
                                         <div>
                                             {item.action && (
-                                                <button className="text-sm font-bold text-brand-blue hover:underline">{item.action}</button>
+                                                <button className="text-[10px] font-black text-brand-blue uppercase tracking-widest hover:underline px-4 py-2 bg-brand-blue/5 rounded-full">{item.action}</button>
                                             )}
                                             {item.value && (
-                                                <span className="text-sm font-bold text-gray-400">{item.value}</span>
+                                                <span className="text-xs font-black text-gray-400 uppercase tracking-widest">{item.value}</span>
                                             )}
                                             {item.toggle && (
                                                 <div className="w-10 h-6 bg-brand-orange rounded-full relative cursor-pointer opacity-90 hover:opacity-100">
