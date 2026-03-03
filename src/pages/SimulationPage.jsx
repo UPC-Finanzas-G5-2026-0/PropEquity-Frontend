@@ -39,14 +39,14 @@ const SimulationPage = () => {
         categoria_integrador: 'Menores ingresos',
         vivienda_sostenible: initialUnitFromState?.es_sostenible || false,
         ifi_seleccionada: '',
-        tipo_seguro: 'individual', // <-- NUEVO: Para cambiar entre Individual y Mancomunado
-        codigo_tipo_tasa: '2',
+        tipo_seguro: 'individual',
+        codigo_tipo_tasa: '2', // 1: Nominal, 2: Efectiva
         tasa_anual: '10',
         capitalizacion: 'Mensual',
         plazo_meses: '240',
         codigo_tipo_gracia: '1',
         meses_gracia: '0',
-        seguro_desgravamen: '0.028', // Valor inicial por defecto más neutro
+        seguro_desgravamen: '0.028',
         tipo_cambio: '3.80',
         ha_recibido_apoyo: false,
         tiene_credito_activo: false,
@@ -55,6 +55,7 @@ const SimulationPage = () => {
 
     const [temValue, setTemValue] = useState('--');
 
+    // Consultar TEM desde backend
     useEffect(() => {
         const fetchTEM = async () => {
             if (!formData.tasa_anual) {
@@ -109,6 +110,7 @@ const SimulationPage = () => {
     const [prospectStatus, setProspectStatus] = useState('');
     const [prospectIFM, setProspectIFM] = useState(0);
 
+    // Carga de Simulación Guardada
     useEffect(() => {
         if (!simId) {
             if (!initialUnitFromState) {
@@ -141,7 +143,7 @@ const SimulationPage = () => {
                     es_integrador: data.tipo_bbp === 'integrador',
                     vivienda_sostenible: data.tipo_bbp === 'sostenible',
                     ifi_seleccionada: data.ifi_seleccionada || '',
-                    tipo_seguro: 'individual', // Por defecto en cargas guardadas
+                    tipo_seguro: 'individual',
                     codigo_tipo_tasa: String(data.tipo_tasa || '2'),
                     tasa_anual: String(data.tasa_anual || '10'),
                     capitalizacion: data.capitalizacion || 'Mensual',
@@ -287,6 +289,24 @@ const SimulationPage = () => {
         return BBP_RANGES.find(r => pPEN >= r.min && pPEN <= r.max) || null;
     };
 
+    // REGLA DE NEGOCIO: Bono BBP vs Tasa Nominal
+    useEffect(() => {
+        if (!formData.sin_bono) {
+            // Si hay bono aplicado, forzamos la Tasa Efectiva (2)
+            if (formData.codigo_tipo_tasa === '1') {
+                setFormData(prev => ({ ...prev, codigo_tipo_tasa: '2' }));
+            }
+        }
+
+        // Si el usuario cambia manualmente a Nominal, quitamos el bono
+        if (formData.codigo_tipo_tasa === '1') {
+            if (!formData.sin_bono) {
+                setFormData(prev => ({ ...prev, sin_bono: true }));
+            }
+        }
+    }, [formData.sin_bono, formData.codigo_tipo_tasa]);
+
+
     useEffect(() => {
         if (selectedUnit) {
             const m = selectedUnit.moneda || selectedUnit.codigo_moneda;
@@ -315,7 +335,6 @@ const SimulationPage = () => {
         }
     }, [formData.ifi_seleccionada]);
 
-    // 👇 LÓGICA DE TASAS Y SEGUROS ACTUALIZADA CON BASE EN LA IMAGEN OFICIAL 👇
     useEffect(() => {
         if (!formData.ifi_seleccionada || !selectedUnit) return;
         const p = selectedUnit.precio_venta;
@@ -355,7 +374,6 @@ const SimulationPage = () => {
         const config = bankRules[formData.ifi_seleccionada];
         if (config) {
             const rule = config.rates.find(r => montoFinanciar <= r.max) || config.rates[config.rates.length - 1];
-            // Evalúa el tipo de seguro seleccionado
             const seguroValue = formData.tipo_seguro === 'mancomunado' ? config.seguro_mancomunado : config.seguro_individual;
 
             setFormData(prev => ({
@@ -364,7 +382,6 @@ const SimulationPage = () => {
                 seguro_desgravamen: seguroValue
             }));
         }
-        // Agregamos `formData.tipo_seguro` como dependencia para que se recalcule al cambiar de individual a mancomunado
     }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp, formData.tipo_seguro]);
 
     const handleSimulate = async () => {
@@ -392,6 +409,7 @@ const SimulationPage = () => {
             });
             return;
         }
+
         const val = parseFloat(formData.cuota_inicial);
         const plazo = parseInt(formData.plazo_meses);
         const precio = selectedUnit?.precio_venta || 0;
@@ -567,7 +585,17 @@ const SimulationPage = () => {
                                         if (p > 362100) return <p className="text-[8px] font-bold text-amber-500 p-2 uppercase text-center">R5: Solo Bono Integrador</p>;
                                         if (mod === 3) return <p className="text-[8px] font-bold text-red-400 p-2 uppercase text-center">Mejoramiento: Sin BBP</p>;
                                         if (isOwner) return <p className="text-[8px] font-bold text-red-400 p-2 uppercase text-center">Propietario actual: Sin BBP</p>;
+
                                         const isSostenible = selectedUnit?.es_sostenible || false;
+                                        // SI EL TIPO DE TASA ES NOMINAL (1), DESACTIVAMOS EL BONO VISUALMENTE
+                                        if (formData.codigo_tipo_tasa === '1') {
+                                            return (
+                                                <div className="w-full py-1.5 rounded-lg text-[9px] font-black uppercase text-left px-3 bg-brand-blue text-white shadow-md">
+                                                    Sin Bono (Tasa Nominal)
+                                                </div>
+                                            );
+                                        }
+
                                         const opciones = isSostenible
                                             ? [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Sostenible', sinBono: false, sostenible: true, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: true, integrador: true }]
                                             : [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Tradicional', sinBono: false, sostenible: false, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: false, integrador: true }];
@@ -587,7 +615,6 @@ const SimulationPage = () => {
                                 </h3>
                                 <CustomSelect label="Entidad (IFI)" value={formData.ifi_seleccionada} showInfo={true} onChange={(val) => handleCustomChange('ifi_seleccionada', val)} options={[{ id: '', label: 'Cálculo Genérico' }, { id: 'BCP', label: 'BCP' }, { id: 'BBVA', label: 'BBVA' }, { id: 'Interbank', label: 'Interbank' }, { id: 'Pichincha', label: 'Banco Pichincha' }, { id: 'GNB', label: 'GNB' }]} />
 
-                                {/*  NUEVO SELECTOR PARA TIPO DE SEGURO (Individual vs Mancomunado) 👇 */}
                                 <div className={!formData.ifi_seleccionada ? 'opacity-50 pointer-events-none' : ''}>
                                     <CustomSelect
                                         label="Tipo de Seguro"
@@ -700,6 +727,43 @@ const SimulationPage = () => {
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="p-4 border-b border-gray-50 flex justify-between items-center">
                                 <h3 className="text-xs font-black text-gray-900 uppercase tracking-tighter">Cronograma de Pagos</h3>
+
+                                {/* 👇 AQUÍ ESTABAN OCULTOS LOS BOTONES PARA EL ASESOR 👇 */}
+                                <div className="flex gap-2">
+                                    {!result.codigo_simulacion && (
+                                        <button
+                                            onClick={handleSaveSimulation}
+                                            disabled={saving}
+                                            className="px-3 py-1.5 bg-brand-blue text-white rounded-lg font-black text-[8px] uppercase hover:bg-brand-blue-dark shadow-sm transition-all"
+                                        >
+                                            {saving ? 'Guardando...' : 'Guardar Proyección'}
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={async () => {
+                                            const codigoSim = result.codigo_simulacion;
+                                            if (!codigoSim) {
+                                                alert('Guarda la simulación primero para poder exportarla.');
+                                                return;
+                                            }
+                                            const r = await exportToExcel(codigoSim);
+                                            if (!r.success) alert(r.error);
+                                        }}
+                                        className={`px-3 py-1.5 rounded-lg font-black text-[8px] uppercase transition-all ${result.codigo_simulacion ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`}
+                                    >Excel</button>
+                                    <button
+                                        onClick={async () => {
+                                            const codigoSim = result.codigo_simulacion;
+                                            if (!codigoSim) {
+                                                alert('Guarda la simulación primero para poder exportarla.');
+                                                return;
+                                            }
+                                            const r = await exportToPDF(codigoSim);
+                                            if (!r.success) alert(r.error);
+                                        }}
+                                        className={`px-3 py-1.5 rounded-lg font-black text-[8px] uppercase transition-all ${result.codigo_simulacion ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`}
+                                    >PDF</button>
+                                </div>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
