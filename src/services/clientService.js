@@ -10,17 +10,46 @@ export const getMyProfile = async () => {
     }
 };
 
-// Buscar cliente por DNI (Solo Staff)
+// Crear un nuevo cliente (Alta por el Asesor)
+export const createClient = async (clientData) => {
+    try {
+        const response = await api.post('/clients/', clientData);
+        return { success: true, data: response.data };
+    } catch (error) {
+        const errorDetail = error.response?.data?.detail;
+        let errorMessage = 'Error al registrar el cliente';
+
+        if (typeof errorDetail === 'string') {
+            errorMessage = errorDetail;
+        } else if (Array.isArray(errorDetail)) {
+            errorMessage = errorDetail.map(e => e.msg).join(', ');
+        }
+
+        return { success: false, error: errorMessage };
+    }
+};
+
+// Buscar cliente por DNI (Solo Staff o mismo cliente)
 export const getClientByDNI = async (dni) => {
     try {
         const response = await api.get(`/clients/${dni}`);
         return { success: true, data: response.data };
     } catch (error) {
-        return { success: false, error: 'Cliente no encontrado' };
+        return { success: false, error: 'Cliente no encontrado por DNI' };
     }
 };
 
-// Actualizar perfil de cliente
+// Buscar cliente por Código/ID (Solo Staff o mismo cliente)
+export const getClientByCode = async (codigo) => {
+    try {
+        const response = await api.get(`/clients/code/${codigo}`);
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: 'Cliente no encontrado por código' };
+    }
+};
+
+// Actualizar perfil de cliente (Edición)
 export const updateProfile = async (id, updateData) => {
     try {
         const response = await api.put(`/clients/update/${id}`, updateData);
@@ -39,7 +68,7 @@ export const updateProfile = async (id, updateData) => {
     }
 };
 
-// Mantener compatibilidad con nombres anteriores
+// Listar todos los clientes
 export const getClients = async () => {
     try {
         const response = await api.get('/clients/');
@@ -49,5 +78,5 @@ export const getClients = async () => {
     }
 };
 
-export const getClientByCode = getClientByDNI;
+// Mantener compatibilidad con nombres de importación en otros componentes
 export const updateClient = updateProfile;

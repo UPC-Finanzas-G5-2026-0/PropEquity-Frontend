@@ -6,6 +6,7 @@ import CalculateIcon from '@mui/icons-material/Calculate';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DownloadIcon from '@mui/icons-material/Download';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'; // 🚨 NUEVO ICONO PARA PDF
 import { useAuth } from '../context/AuthContext';
 import { getMySimulations, exportToExcel, exportToPDF } from '../services/simulationService';
 import { useNavigate, Link } from 'react-router-dom';
@@ -59,10 +60,9 @@ const ClientDashboard = () => {
         return () => window.removeEventListener('focus', handleFocus);
     }, []);
 
-    // Calcular KPIs
     const totalSimulations = simulations.length;
     const avgFinanced = totalSimulations > 0
-        ? simulations.reduce((acc, sim) => acc + (sim.monto_financiamiento || sim.resumen?.monto_financiar || 0), 0) / totalSimulations
+        ? simulations.reduce((acc, sim) => acc + parseFloat(sim.monto_financiamiento || sim.resumen?.monto_financiar || 0), 0) / totalSimulations
         : 0;
 
     const stats = [
@@ -78,6 +78,7 @@ const ClientDashboard = () => {
         }
     };
 
+    // 🚨 Esta función ahora sí se usa en el botón de abajo
     const handleExportPDF = async (id) => {
         const result = await exportToPDF(id);
         if (!result.success) {
@@ -122,7 +123,7 @@ const ClientDashboard = () => {
 
                 {/* Main Action CTA */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
-                    <section className="relative overflow-hidden bg-brand-dark rounded-[3rem] p-12 text-white shadow-2xl shadow-brand-dark/20 group cursor-pointer" onClick={() => navigate('/simulation')}>
+                    <section className="relative overflow-hidden bg-brand-dark rounded-[3rem] p-12 text-white shadow-2xl shadow-brand-dark/20 group cursor-pointer" onClick={() => navigate('/simulador')}>
                         <div className="relative z-10">
                             <h2 className="text-3xl font-black mb-4 leading-tight max-w-xs">Simula tu cuota mensual ahora</h2>
                             <p className="text-gray-400 mb-8 font-medium text-sm max-w-sm">Aplica al Bono del Buen Pagador y obtén tasas preferenciales.</p>
@@ -157,7 +158,7 @@ const ClientDashboard = () => {
                             <h3 className="text-3xl font-black text-gray-900 tracking-tight">Mis Simulaciones</h3>
                             <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">Historial de simulaciones realizadas</p>
                         </div>
-                        <Link to="/simulation" className="bg-brand-orange px-6 py-3 rounded-xl font-black text-[10px] text-white uppercase tracking-widest hover:bg-orange-600 transition-all shadow-sm">
+                        <Link to="/simulador" className="bg-brand-orange px-6 py-3 rounded-xl font-black text-[10px] text-white uppercase tracking-widest hover:bg-orange-600 transition-all shadow-sm">
                             + Nueva Simulación
                         </Link>
                     </div>
@@ -180,7 +181,7 @@ const ClientDashboard = () => {
                             <ReceiptLongIcon sx={{ fontSize: 60 }} className="text-gray-300 mb-4" />
                             <h4 className="text-xl font-bold text-gray-700 mb-2">No tienes simulaciones aún</h4>
                             <p className="text-gray-500 mb-6">Crea tu primera simulación para ver tu cronograma de pagos.</p>
-                            <Link to="/simulation" className="inline-flex items-center gap-2 bg-brand-orange text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-600 transition-all">
+                            <Link to="/simulador" className="inline-flex items-center gap-2 bg-brand-orange text-white px-6 py-3 rounded-xl font-bold hover:bg-orange-600 transition-all">
                                 Crear Simulación <ArrowForwardIcon />
                             </Link>
                         </div>
@@ -203,15 +204,21 @@ const ClientDashboard = () => {
                                         {simulations.map((sim) => (
                                             <tr key={sim.codigo_simulacion} className="hover:bg-gray-50 transition-colors">
                                                 <td className="px-6 py-4 text-sm font-bold text-gray-900">#{sim.codigo_simulacion}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">{sim.direccion_unidad ? `${sim.distrito_unidad ? sim.distrito_unidad + ' - ' : ''}${sim.direccion_unidad}` : `Unidad #${sim.codigo_unidad}`}</td>
-                                                <td className="px-6 py-4 text-sm font-bold text-brand-blue">{formatCurrency(sim.monto_financiamiento || sim.resumen?.monto_financiar || 0)}</td>
-                                                <td className="px-6 py-4 text-sm font-bold text-brand-orange">{formatCurrency(sim.cuota_mensual || sim.resumen?.cuota_base || 0)}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-600">
+                                                    {sim.direccion_unidad ? `${sim.distrito_unidad ? sim.distrito_unidad + ' - ' : ''}${sim.direccion_unidad}` : sim.unidad_rel?.direccion_unidad || `Unidad #${sim.codigo_unidad}`}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-bold text-brand-blue">
+                                                    {formatCurrency(sim.monto_financiamiento || sim.resumen?.monto_financiar || 0)}
+                                                </td>
+                                                <td className="px-6 py-4 text-sm font-bold text-brand-orange">
+                                                    {formatCurrency(sim.cuota_mensual || sim.detalles?.[1]?.cuota_total || sim.detalles?.[0]?.cuota_total || sim.resumen?.cuota_base || 0)}
+                                                </td>
                                                 <td className="px-6 py-4 text-sm text-gray-600">{sim.plazo_meses} meses</td>
                                                 <td className="px-6 py-4 text-sm text-gray-500">{formatDate(sim.fecha_simulacion)}</td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center justify-center gap-2">
                                                         <button
-                                                            onClick={() => navigate(`/simulation/${sim.codigo_simulacion}`)}
+                                                            onClick={() => navigate(`/simulaciones/${sim.codigo_simulacion}`)}
                                                             className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                                                             title="Ver Detalles"
                                                         >
@@ -223,6 +230,13 @@ const ClientDashboard = () => {
                                                             title="Exportar Excel"
                                                         >
                                                             <DownloadIcon fontSize="small" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleExportPDF(sim.codigo_simulacion)}
+                                                            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                                                            title="Exportar PDF"
+                                                        >
+                                                            <PictureAsPdfIcon fontSize="small" />
                                                         </button>
                                                     </div>
                                                 </td>
