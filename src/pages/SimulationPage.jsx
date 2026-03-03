@@ -39,7 +39,6 @@ const SimulationPage = () => {
         categoria_integrador: 'Menores ingresos',
         vivienda_sostenible: initialUnitFromState?.es_sostenible || false,
         ifi_seleccionada: '',
-        tipo_seguro: 'individual',
         codigo_tipo_tasa: '2', // 1: Nominal, 2: Efectiva
         tasa_anual: '10',
         capitalizacion: 'Mensual', // Opciones: Mensual, Bimestral, Trimestral
@@ -113,6 +112,8 @@ const SimulationPage = () => {
     const [saving, setSaving] = useState(false);
     const [prospectStatus, setProspectStatus] = useState('');
     const [prospectIFM, setProspectIFM] = useState(0);
+    // 👇 Estado para saber si el prospecto buscado es mancomunado
+    const [isProspectMancomunado, setIsProspectMancomunado] = useState(false);
 
     // Carga de Simulación Guardada
     useEffect(() => {
@@ -147,7 +148,6 @@ const SimulationPage = () => {
                     es_integrador: data.tipo_bbp === 'integrador',
                     vivienda_sostenible: data.tipo_bbp === 'sostenible',
                     ifi_seleccionada: data.ifi_seleccionada || '',
-                    tipo_seguro: 'individual',
                     codigo_tipo_tasa: String(data.tipo_tasa || '2'),
                     tasa_anual: String(data.tasa_anual || '10'),
                     capitalizacion: data.capitalizacion || 'Mensual',
@@ -210,7 +210,6 @@ const SimulationPage = () => {
         setServerError(null);
     };
 
-    // 👇 LOGICA INTELIGENTE EN EL SELECTOR 👇
     const handleCustomChange = (name, value) => {
         setFormData(prev => {
             const newData = { ...prev, [name]: String(value) };
@@ -248,17 +247,23 @@ const SimulationPage = () => {
                         const data = await response.json();
                         setProspectIFM(data.ifm);
                         setProspectStatus(`✓ Ingresos cargados (${data.type})`);
+                        // Detectamos internamente si el prospecto tiene ingresos mancomunados
+                        const typeStr = String(data.type || '').toLowerCase();
+                        setIsProspectMancomunado(typeStr.includes('mancomunado') || typeStr.includes('conyuge') || typeStr.includes('casado'));
                     } else {
                         setProspectIFM(0);
                         setProspectStatus('⚠ ID no encontrado en BD');
+                        setIsProspectMancomunado(false);
                     }
                 } catch (error) {
                     setProspectIFM(0);
                     setProspectStatus('⚠ Error de red');
+                    setIsProspectMancomunado(false);
                 }
             } else {
                 setProspectIFM(0);
                 setProspectStatus('');
+                setIsProspectMancomunado(false);
             }
         };
         const timer = setTimeout(fetchProspect, 600);
@@ -331,7 +336,7 @@ const SimulationPage = () => {
         }
     }, [selectedUnit, formData.vivienda_sostenible, formData.es_integrador, formData.categoria_integrador, formData.sin_bono, formData.ha_recibido_apoyo, formData.tiene_credito_activo, formData.tipo_cambio, user?.ingreso_mensual]);
 
-    // Aplicador automático de las tasas del Banco
+    // CÁLCULO INTERNO DE TASA Y SEGURO (MIRA AL USUARIO O AL PROSPECTO)
     useEffect(() => {
         if (!formData.ifi_seleccionada || !selectedUnit) return;
         const p = selectedUnit.precio_venta;
@@ -371,7 +376,13 @@ const SimulationPage = () => {
         const config = bankRules[formData.ifi_seleccionada];
         if (config) {
             const rule = config.rates.find(r => montoFinanciar <= r.max) || config.rates[config.rates.length - 1];
-            const seguroValue = formData.tipo_seguro === 'mancomunado' ? config.seguro_mancomunado : config.seguro_individual;
+
+            // Lógica invisible: Determina si se aplica la tasa mancomunada sin mostrar el dropdown
+            const isMancomunado = userRole === 'asesor'
+                ? isProspectMancomunado
+                : (parseFloat(user?.ingreso_conyuge || 0) > 0 || !!user?.nombre_conyuge);
+
+            const seguroValue = isMancomunado ? config.seguro_mancomunado : config.seguro_individual;
 
             setFormData(prev => ({
                 ...prev,
@@ -380,7 +391,7 @@ const SimulationPage = () => {
                 seguro_desgravamen: seguroValue
             }));
         }
-    }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp, formData.tipo_seguro]);
+    }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp, userRole, isProspectMancomunado, user?.ingreso_conyuge, user?.nombre_conyuge]);
 
     const handleSimulate = async () => {
         if (userRole === 'administrador') {
@@ -616,19 +627,6 @@ const SimulationPage = () => {
                                 </h3>
                                 <CustomSelect label="Entidad (IFI)" value={formData.ifi_seleccionada} showInfo={true} onChange={(val) => handleCustomChange('ifi_seleccionada', val)} options={[{ id: '', label: 'Cálculo Genérico' }, { id: 'BCP', label: 'BCP' }, { id: 'BBVA', label: 'BBVA' }, { id: 'Interbank', label: 'Interbank' }, { id: 'Pichincha', label: 'Banco Pichincha' }, { id: 'GNB', label: 'GNB' }]} />
 
-                                <div className={!formData.ifi_seleccionada ? 'opacity-50 pointer-events-none' : ''}>
-                                    <CustomSelect
-                                        label="Tipo de Seguro"
-                                        value={formData.tipo_seguro}
-                                        showInfo={false}
-                                        onChange={(val) => handleCustomChange('tipo_seguro', val)}
-                                        options={[
-                                            { id: 'individual', label: 'Individual' },
-                                            { id: 'mancomunado', label: 'Mancomunado' }
-                                        ]}
-                                    />
-                                </div>
-
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tasa Anual (%)</label>
                                     <input
@@ -644,7 +642,6 @@ const SimulationPage = () => {
                                     <CustomSelect label="Tipo de Tasa" value={formData.ifi_seleccionada ? '2' : formData.codigo_tipo_tasa} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_tasa', val)} options={[{ id: '1', label: 'Nominal (TNA)' }, { id: '2', label: 'Efectiva (TEA)' }]} />
                                 </div>
 
-                                {/* 👇 AQUI ESTA LA CAPITALIZACION RESTAURADA 👇 */}
                                 <div className={`transition-all duration-300 ${formData.codigo_tipo_tasa !== '1' ? 'opacity-30 pointer-events-none' : 'opacity-100 mb-2'}`}>
                                     <CustomSelect
                                         label="Capitalización"
@@ -842,37 +839,37 @@ const SimulationPage = () => {
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead className="bg-[#EEE] text-[8px] font-black text-brand-dark uppercase tracking-[0.2em] border-b-2 border-brand-blue/10">
-                                        <tr>
-                                            <th className="px-2 py-3">N°</th>
-                                            <th className="px-2 py-3">Fecha Pago</th>
-                                            <th className="px-3 py-3">TEA%</th>
-                                            <th className="px-3 py-3">TEM%</th>
-                                            <th className="px-3 py-3">Saldo Inicial</th>
-                                            <th className="px-3 py-3">Interés</th>
-                                            <th className="px-3 py-3">Amortización</th>
-                                            <th className="px-3 py-3">Seg. Desgrav.</th>
-                                            <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue">Cuota Total</th>
-                                            <th className="px-3 py-3">Saldo Final</th>
-                                        </tr>
+                                    <tr>
+                                        <th className="px-2 py-3">N°</th>
+                                        <th className="px-2 py-3">Fecha Pago</th>
+                                        <th className="px-3 py-3">TEA%</th>
+                                        <th className="px-3 py-3">TEM%</th>
+                                        <th className="px-3 py-3">Saldo Inicial</th>
+                                        <th className="px-3 py-3">Interés</th>
+                                        <th className="px-3 py-3">Amortización</th>
+                                        <th className="px-3 py-3">Seg. Desgrav.</th>
+                                        <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue">Cuota Total</th>
+                                        <th className="px-3 py-3">Saldo Final</th>
+                                    </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50 text-[9px] font-bold text-gray-700">
-                                        {result.detalles.map((d, index) => {
-                                            const rowClass = d.numero_cuota === 0 ? 'bg-gray-50/50 italic opacity-60 text-gray-400' : '';
-                                            return (
-                                                <tr key={index} className={`border-b border-gray-50 hover:bg-brand-blue/[0.02] transition-colors ${rowClass}`}>
-                                                    <td className="px-2 py-2.5 font-black text-brand-blue">#{d.numero_cuota}</td>
-                                                    <td className="px-2 py-2.5 text-center text-gray-500">{new Date(d.fecha_vencimiento).toLocaleDateString('es-PE')}</td>
-                                                    <td className="px-3 py-2.5 text-center text-gray-500">{d.tea ? `${parseFloat(d.tea).toFixed(2)}%` : '—'}</td>
-                                                    <td className="px-3 py-2.5 text-center text-gray-500">{d.tem ? `${parseFloat(d.tem).toFixed(4)}%` : '—'}</td>
-                                                    <td className="px-3 py-2.5 text-gray-600 font-bold">S/ {parseFloat(d.saldo_inicial || d.saldo_inicio || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 font-black text-brand-blue bg-brand-blue/[0.01]">S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-900 font-black">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                </tr>
-                                            );
-                                        })}
+                                    {result.detalles.map((d, index) => {
+                                        const rowClass = d.numero_cuota === 0 ? 'bg-gray-50/50 italic opacity-60 text-gray-400' : '';
+                                        return (
+                                            <tr key={index} className={`border-b border-gray-50 hover:bg-brand-blue/[0.02] transition-colors ${rowClass}`}>
+                                                <td className="px-2 py-2.5 font-black text-brand-blue">#{d.numero_cuota}</td>
+                                                <td className="px-2 py-2.5 text-center text-gray-500">{new Date(d.fecha_vencimiento).toLocaleDateString('es-PE')}</td>
+                                                <td className="px-3 py-2.5 text-center text-gray-500">{d.tea ? `${parseFloat(d.tea).toFixed(2)}%` : '—'}</td>
+                                                <td className="px-3 py-2.5 text-center text-gray-500">{d.tem ? `${parseFloat(d.tem).toFixed(4)}%` : '—'}</td>
+                                                <td className="px-3 py-2.5 text-gray-600 font-bold">S/ {parseFloat(d.saldo_inicial || d.saldo_inicio || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-3 py-2.5 font-black text-brand-blue bg-brand-blue/[0.01]">S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                <td className="px-3 py-2.5 text-gray-900 font-black">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                            </tr>
+                                        );
+                                    })}
                                     </tbody>
                                 </table>
                             </div>
