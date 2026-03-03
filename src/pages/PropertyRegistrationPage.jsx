@@ -15,8 +15,8 @@ const getImageUrl = (fotoPath) => {
     if (!fotoPath) return null; // Si no hay foto, retorna null para que tu código muestre el ícono de Location
     if (fotoPath.startsWith('http')) return fotoPath; // Si es de Cloudinary, pasa directo
 
-    // Si tienes fotos locales antiguas, pon aquí la URL de tu backend en Render
-    return `https://propequity-backend.onrender.com${fotoPath}`;
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    return `${API_URL}${fotoPath}`;
 };
 
 // Todos los distritos de Lima Metropolitana

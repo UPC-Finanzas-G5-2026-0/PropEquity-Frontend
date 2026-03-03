@@ -15,8 +15,8 @@ const getImageUrl = (fotoPath) => {
   // Si empieza con '/', significa que es una ruta local en /public/ (Ideal para desarrollo/demos)
   if (fotoPath.startsWith('/')) return fotoPath;
 
-  // URL de tu backend en Render para fotos antiguas subidas localmente (opcional)
-  return `https://propequity-backend.onrender.com${fotoPath}`;
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  return `${API_URL}${fotoPath}`;
 };
 
 const PropertyCatalogPage = () => {

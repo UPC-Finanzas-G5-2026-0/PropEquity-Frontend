@@ -14,7 +14,8 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 const getImageUrl = (fotoPath) => {
   if (!fotoPath) return null;
   if (fotoPath.startsWith('http')) return fotoPath;
-  return `https://tu-backend.onrender.com${fotoPath}`;
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  return `${API_URL}${fotoPath}`;
 };
 
 // 🗺️ RANGOS BBP FMV (DS 004-2025-VIVIENDA)
