@@ -7,8 +7,10 @@ const Sidebar = () => {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
 
-  // Rol del usuario normalizado a minúsculas. El AuthContext guarda 'Administrador' | 'Asesor' | 'Cliente'
-  const currentRole = (user?.role || '').toLowerCase();
+  // Extraer rol del usuario buscando en todos los campos posibles
+  const rawRole = user?.role || user?.rol || user?.rol_usuario || user?.tipo_rol || user?.rol_rel?.tipo_rol || '';
+  const currentRole = rawRole.toLowerCase();
+  console.log('[Sidebar] currentRole:', currentRole, '| user keys:', user ? Object.keys(user) : 'null');
 
   // 2. Función para asignar la ruta correcta del Dashboard según el rol
   const getHomePath = (role) => {
