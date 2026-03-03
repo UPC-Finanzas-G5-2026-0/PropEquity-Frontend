@@ -93,7 +93,7 @@ const ClientDashboard = () => {
             <main className="flex-1 p-6 overflow-y-auto">
                 <header className="mb-8 flex justify-between items-end">
                     <div>
-                        <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2">
+                        <h1 className="text-2xl font-black text-gray-900 tracking-tight">
                             ¡Bienvenido, {user?.nombres || 'Cliente'}! 👋
                         </h1>
                         <p className="text-gray-500 text-sm font-medium">Gestiona tus simulaciones de crédito hipotecario.</p>

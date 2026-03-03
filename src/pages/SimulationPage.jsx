@@ -236,45 +236,6 @@ const SimulationPage = () => {
     };
 
     useEffect(() => {
-        const fetchProspect = async () => {
-            if (userRole === 'asesor' && formData.codigo_prospecto) {
-                setProspectStatus('Buscando...');
-                try {
-                    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
-                    //  REEMPLAZA ESTO POR LA URL REAL DE TU BACKEND EN RENDER 🚨
-                    const API_URL = 'https://propequity-backend.onrender.com';
-
-                    const response = await fetch(`https://propequity-backend.onrender.com/api/v1/simulator/check-income/${formData.codigo_prospecto}`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        setProspectIFM(data.ifm);
-                        setProspectStatus(`✓ Ingresos cargados (${data.type})`);
-                    } else {
-                        setProspectIFM(0);
-                        setProspectStatus('⚠ ID no encontrado en BD');
-                    }
-                } catch (error) {
-                    setProspectIFM(0);
-                    setProspectStatus('⚠ Error de red');
-                }
-            } else {
-                setProspectIFM(0);
-                setProspectStatus('');
-            }
-        };
-
-        const timer = setTimeout(fetchProspect, 600);
-        return () => clearTimeout(timer);
-    }, [formData.codigo_prospecto, userRole]);
-
-    useEffect(() => {
         fetchUnits();
 
         // Refrescar cuando la ventana gana el foco (ej: vuelves de otra pestaña/página)
