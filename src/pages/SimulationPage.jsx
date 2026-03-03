@@ -716,8 +716,8 @@ const SimulationPage = () => {
                                     <p className="text-[8px] text-gray-400 uppercase font-black">Ingreso Familiar (IFM)</p>
                                     <p className="text-[11px] font-black text-white">
                                         S/ {userRole === 'asesor'
-                                        ? parseFloat(prospectIFM || 0).toLocaleString()
-                                        : (parseFloat(user?.ingreso_mensual || 0) + parseFloat(user?.ingreso_conyuge || 0)).toLocaleString()}
+                                            ? parseFloat(prospectIFM || 0).toLocaleString()
+                                            : (parseFloat(user?.ingreso_mensual || 0) + parseFloat(user?.ingreso_conyuge || 0)).toLocaleString()}
                                     </p>
                                 </div>
                                 {parseFloat(user?.ingreso_conyuge || 0) > 0 && userRole !== 'asesor' && (
@@ -824,58 +824,62 @@ const SimulationPage = () => {
                                 </div>
                                 <div className="overflow-x-auto"><table className="w-full text-left">
                                     <thead className="bg-[#EEE] text-[8px] font-black text-brand-dark uppercase tracking-[0.2em] border-b-2 border-brand-blue/10">
-                                    <tr>
-                                        <th className="px-2 py-3">N°</th>
-                                        <th className="px-2 py-3">Fecha Pago</th>
-                                        <th className="px-3 py-3">Saldo Inicial</th>
-                                        <th className="px-3 py-3">Interés</th>
-                                        <th className="px-3 py-3">Amortización</th>
-                                        <th className="px-3 py-3">Seg. Desgrav.</th>
-                                        <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue">Cuota Total</th>
-                                        <th className="px-3 py-3">Saldo Final</th>
-                                    </tr>
+                                        <tr>
+                                            <th className="px-2 py-3">N°</th>
+                                            <th className="px-2 py-3">Fecha Pago</th>
+                                            <th className="px-3 py-3">TEA%</th>
+                                            <th className="px-3 py-3">TEM%</th>
+                                            <th className="px-3 py-3">Saldo Inicial</th>
+                                            <th className="px-3 py-3">Interés</th>
+                                            <th className="px-3 py-3">Amortización</th>
+                                            <th className="px-3 py-3">Seg. Desgrav.</th>
+                                            <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue">Cuota Total</th>
+                                            <th className="px-3 py-3">Saldo Final</th>
+                                        </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50 text-[9px] font-bold text-gray-700">
-                                    {result.detalles.map((d, index) => {
-                                        const gracia = d.plazo_gracia || d.tipo_gracia || '';
-                                        const esParcial = gracia.toLowerCase().includes('parcial');
-                                        const esTotal = gracia.toLowerCase().includes('total');
-                                        const rowClass = d.numero_cuota === 0
-                                            ? 'bg-gray-50/50 italic opacity-60 text-gray-400'
-                                            : esParcial
-                                                ? 'bg-amber-50/80'
-                                                : esTotal
-                                                    ? 'bg-red-50/60'
-                                                    : '';
+                                        {result.detalles.map((d, index) => {
+                                            const gracia = d.plazo_gracia || d.tipo_gracia || '';
+                                            const esParcial = gracia.toLowerCase().includes('parcial');
+                                            const esTotal = gracia.toLowerCase().includes('total');
+                                            const rowClass = d.numero_cuota === 0
+                                                ? 'bg-gray-50/50 italic opacity-60 text-gray-400'
+                                                : esParcial
+                                                    ? 'bg-amber-50/80'
+                                                    : esTotal
+                                                        ? 'bg-red-50/60'
+                                                        : '';
 
-                                        return (
-                                            <tr key={index} className={`border-b border-gray-50 hover:bg-brand-blue/[0.02] transition-colors ${rowClass}`}>
-                                                <td className="px-2 py-2.5 font-black text-brand-blue">
-                                                    <div className="flex items-center gap-2">
-                                                        {d.numero_cuota > 0 && esParcial && <div className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Gracia Parcial"></div>}
-                                                        {d.numero_cuota > 0 && esTotal && <div className="w-1.5 h-1.5 rounded-full bg-red-500" title="Gracia Total"></div>}
-                                                        #{d.numero_cuota}
-                                                    </div>
-                                                </td>
-                                                <td className="px-2 py-2.5 text-center text-gray-500">{new Date(d.fecha_vencimiento).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
-                                                <td className="px-3 py-2.5 text-gray-600 font-bold">S/ {parseFloat(d.saldo_inicial || d.saldo_inicio || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                <td className="px-3 py-2.5 font-black text-brand-blue bg-brand-blue/[0.01]">
-                                                    <div className="flex flex-col">
-                                                        <span>S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                                        {d.numero_cuota > 0 && (esParcial || esTotal) && (
-                                                            <span className={`text-[7px] font-black uppercase tracking-tighter ${esTotal ? 'text-red-500' : 'text-amber-600'}`}>
+                                            return (
+                                                <tr key={index} className={`border-b border-gray-50 hover:bg-brand-blue/[0.02] transition-colors ${rowClass}`}>
+                                                    <td className="px-2 py-2.5 font-black text-brand-blue">
+                                                        <div className="flex items-center gap-2">
+                                                            {d.numero_cuota > 0 && esParcial && <div className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Gracia Parcial"></div>}
+                                                            {d.numero_cuota > 0 && esTotal && <div className="w-1.5 h-1.5 rounded-full bg-red-500" title="Gracia Total"></div>}
+                                                            #{d.numero_cuota}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-2 py-2.5 text-center text-gray-500">{new Date(d.fecha_vencimiento).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+                                                    <td className="px-3 py-2.5 text-center text-gray-500">{d.tea ? `${parseFloat(d.tea).toFixed(2)}%` : '—'}</td>
+                                                    <td className="px-3 py-2.5 text-center text-gray-500">{d.tem ? `${parseFloat(d.tem).toFixed(4)}%` : '—'}</td>
+                                                    <td className="px-3 py-2.5 text-gray-600 font-bold">S/ {parseFloat(d.saldo_inicial || d.saldo_inicio || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 font-black text-brand-blue bg-brand-blue/[0.01]">
+                                                        <div className="flex flex-col">
+                                                            <span>S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                            {d.numero_cuota > 0 && (esParcial || esTotal) && (
+                                                                <span className={`text-[7px] font-black uppercase tracking-tighter ${esTotal ? 'text-red-500' : 'text-amber-600'}`}>
                                                                     Gracia {esTotal ? 'Total' : 'Parcial'}
                                                                 </span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-3 py-2.5 text-gray-900 font-black">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                            </tr>
-                                        );
-                                    })}
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-2.5 text-gray-900 font-black">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody></table></div>
                             </div>
                         </div>
