@@ -631,7 +631,14 @@ const SimulationPage = () => {
 
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tasa Anual (%)</label>
-                                    <input type="number" name="tasa_anual" value={formData.tasa_anual} onChange={handleChange} className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-black text-gray-900 text-sm transition-all" />
+                                    <input
+                                        type="number"
+                                        name="tasa_anual"
+                                        value={formData.tasa_anual}
+                                        onChange={handleChange}
+                                        readOnly={!!formData.ifi_seleccionada}
+                                        className={`w-full rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-black text-gray-900 text-sm transition-all ${formData.ifi_seleccionada ? 'bg-gray-100 cursor-not-allowed opacity-75' : 'bg-gray-50/50'}`}
+                                    />
                                 </div>
                                 <div className={formData.ifi_seleccionada ? 'opacity-50 pointer-events-none' : ''}>
                                     <CustomSelect label="Tipo de Tasa" value={formData.ifi_seleccionada ? '2' : formData.codigo_tipo_tasa} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_tasa', val)} options={[{ id: '1', label: 'Nominal (TNA)' }, { id: '2', label: 'Efectiva (TEA)' }]} />
@@ -654,7 +661,14 @@ const SimulationPage = () => {
 
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Seguro Desgravamen (%)</label>
-                                    <input type="number" name="seguro_desgravamen" value={formData.seguro_desgravamen} onChange={handleChange} className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-black text-gray-900 text-sm transition-all" />
+                                    <input
+                                        type="number"
+                                        name="seguro_desgravamen"
+                                        value={formData.seguro_desgravamen}
+                                        onChange={handleChange}
+                                        readOnly={!!formData.ifi_seleccionada}
+                                        className={`w-full rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-black text-gray-900 text-sm transition-all ${formData.ifi_seleccionada ? 'bg-gray-100 cursor-not-allowed opacity-75' : 'bg-gray-50/50'}`}
+                                    />
                                 </div>
                             </div>
 
@@ -664,10 +678,12 @@ const SimulationPage = () => {
                                     <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
                                     Gastos Iniciales
                                 </h3>
-                                <div className="grid grid-cols-1 gap-6">
-                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tasación</label><input type="number" name="gastos_tasacion" value={formData.gastos_tasacion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
-                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Registros Públicos</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
-                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Notaría</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Costes Notariales</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
+                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Costes Registrales</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
+                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Tasación</label><input type="number" name="gastos_tasacion" value={formData.gastos_tasacion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
+                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Comisión de estudio</label><input type="number" name="comision_estudio" value={formData.comision_estudio} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
+                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Comisión activación</label><input type="number" name="comision_activacion" value={formData.comision_activacion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
                                 </div>
                                 <div className="pt-2">
                                     {userRole === 'administrador' ? (
