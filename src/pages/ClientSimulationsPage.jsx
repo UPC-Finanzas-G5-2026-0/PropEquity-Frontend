@@ -8,6 +8,14 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import { exportToExcel, exportToPDF } from '../services/simulationService';
 import { useAuth } from '../context/AuthContext';
 
+const formatDate = (dateString) => {
+  return new Date(dateString).toLocaleDateString('es-PE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
+
 const ClientSimulationsPage = () => {
   const { id } = useParams(); // Obtenemos el ID del cliente desde la URL
   const navigate = useNavigate();
@@ -52,7 +60,7 @@ const ClientSimulationsPage = () => {
   return (
     <div className="flex bg-[#F8FAFC] min-h-screen font-['Inter',_sans-serif]">
       <Sidebar />
-      <main className="flex-1 p-10 overflow-y-auto">
+      <main className="flex-1 p-6 overflow-y-auto">
         <header className="mb-10">
           <button
             onClick={() => navigate(-1)}
@@ -61,11 +69,11 @@ const ClientSimulationsPage = () => {
             <ArrowBackIcon fontSize="small" /> Volver a mi cartera
           </button>
           <div>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight">
-              Historial de Simulaciones
+            <h1 className="text-2xl font-black text-gray-900 tracking-tight">
+              Mis Simulaciones
             </h1>
-            <p className="text-gray-500 font-medium mt-1">
-              Mostrando todas las propuestas generadas para el Cliente ID: {id}
+            <p className="text-gray-500 text-sm font-medium mt-1">
+              Historial de propuestas generadas para el Cliente ID: {id}
             </p>
           </div>
         </header>
@@ -94,43 +102,55 @@ const ClientSimulationsPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {simulations.map((sim) => (
               <div key={sim.codigo_simulacion} className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100 hover:shadow-xl transition-shadow flex flex-col">
-                <div className="flex justify-between items-start mb-6 border-b border-gray-50 pb-4">
+                <div className="flex justify-between items-start mb-5 border-b border-gray-50 pb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-blue-50 text-brand-blue flex items-center justify-center">
                       <AccountBalanceIcon fontSize="small" />
                     </div>
                     <div>
                       <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Simulación #{sim.codigo_simulacion}</p>
-                      <p className="text-sm font-bold text-gray-900">{sim.fecha_simulacion}</p>
+                      <p className="text-sm font-bold text-gray-900">{formatDate ? formatDate(sim.fecha_simulacion) : sim.fecha_simulacion}</p>
                     </div>
                   </div>
-                  <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-black uppercase tracking-widest">
-                                        {sim.ifi_seleccionada || 'Genérico'}
-                                    </span>
+                  <span className="px-3 py-1 bg-gray-50 text-gray-500 border border-gray-100 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                    {sim.ifi_seleccionada || 'Genérico'}
+                  </span>
+                </div>
+
+                <div className="mb-5">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                    <span className="w-1 h-1 rounded-full bg-brand-orange"></span> Propiedad / Ubicación
+                  </p>
+                  <h4 className="text-base font-black text-gray-900 leading-tight truncate">
+                    {sim.distrito_unidad || sim.unidad_rel?.distrito_unidad || 'Sin distrito'}
+                  </h4>
+                  <p className="text-[11px] font-bold text-gray-400 leading-tight mt-1 truncate">
+                    {sim.direccion_unidad || sim.unidad_rel?.direccion_unidad || 'Sin dirección registrada'}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-6 flex-1">
                   <div>
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Monto a Financiar</p>
-                    <p className="text-lg font-black text-gray-900">{formatCurrency(sim.resumen?.monto_financiar || 0)}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Monto Financiado</p>
+                    <p className="text-base font-black text-gray-900">{formatCurrency(sim.resumen?.monto_financiar || 0)}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Bono Aplicado</p>
-                    <p className="text-lg font-black text-brand-orange">{formatCurrency(sim.bono_bbp || 0)}</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Bono Aplicado</p>
+                    <p className="text-base font-black text-brand-orange">{formatCurrency(sim.bono_bbp || 0)}</p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Tasa Anual (TEA)</p>
-                    <p className="text-base font-bold text-gray-700">{sim.tasa_anual}%</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Tasa (TEA)</p>
+                    <p className="text-base font-black text-gray-900">{sim.tasa_anual || sim.resumen?.tasa_efectiva_anual}%</p>
                   </div>
                   <div>
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Plazo</p>
-                    <p className="text-base font-bold text-gray-700">{sim.plazo_meses} Meses</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Plazo</p>
+                    <p className="text-base font-black text-gray-900">{sim.plazo_meses} Meses</p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-50">
                   <div>
-                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Cuota Estimada</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Cuota Estimada</p>
                     <p className="text-xl font-black text-brand-blue">{formatCurrency(sim.resumen?.cuota_base || 0)}</p>
                   </div>
                   <div className="flex gap-2">
