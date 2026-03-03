@@ -6,6 +6,7 @@ import CalculateIcon from '@mui/icons-material/Calculate';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DownloadIcon from '@mui/icons-material/Download';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'; // 🚨 NUEVO ICONO PARA PDF
 import { useAuth } from '../context/AuthContext';
 import { getMySimulations, exportToExcel, exportToPDF } from '../services/simulationService';
 import { useNavigate, Link } from 'react-router-dom';
@@ -53,7 +54,6 @@ const ClientDashboard = () => {
         fetchSimulations();
     }, []);
 
-    // 🚨 Calcular KPIs (Ajustado para leer 'resumen.monto_financiar')
     const totalSimulations = simulations.length;
     const avgFinanced = totalSimulations > 0
         ? simulations.reduce((acc, sim) => acc + parseFloat(sim.resumen?.monto_financiar || 0), 0) / totalSimulations
@@ -72,6 +72,7 @@ const ClientDashboard = () => {
         }
     };
 
+    // 🚨 Esta función ahora sí se usa en el botón de abajo
     const handleExportPDF = async (id) => {
         const result = await exportToPDF(id);
         if (!result.success) {
@@ -198,7 +199,6 @@ const ClientDashboard = () => {
                                         <tr key={sim.codigo_simulacion} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4 text-sm font-bold text-gray-900">#{sim.codigo_simulacion}</td>
 
-                                            {/* 🚨 CORRECCIONES APLICADAS AQUÍ */}
                                             <td className="px-6 py-4 text-sm text-gray-600">
                                                 {sim.unidad_rel?.direccion_unidad || `Unidad #${sim.codigo_unidad}`}
                                             </td>
@@ -208,15 +208,14 @@ const ClientDashboard = () => {
                                             <td className="px-6 py-4 text-sm font-bold text-brand-orange">
                                                 {formatCurrency(sim.detalles?.[1]?.cuota_total || sim.detalles?.[0]?.cuota_total || sim.resumen?.cuota_base || 0)}
                                             </td>
-                                            {/* ------------------------------- */}
 
                                             <td className="px-6 py-4 text-sm text-gray-600">{sim.plazo_meses} meses</td>
                                             <td className="px-6 py-4 text-sm text-gray-500">{formatDate(sim.fecha_simulacion)}</td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    {/* Ruta corregida a /simulador/detalle/ */}
+                                                    {/* 🚨 RUTA CORREGIDA AQUÍ PARA QUE COINCIDA CON APP.JS */}
                                                     <button
-                                                        onClick={() => navigate(`/simulador/detalle/${sim.codigo_simulacion}`)}
+                                                        onClick={() => navigate(`/simulaciones/${sim.codigo_simulacion}`)}
                                                         className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
                                                         title="Ver Detalles"
                                                     >
@@ -228,6 +227,14 @@ const ClientDashboard = () => {
                                                         title="Exportar Excel"
                                                     >
                                                         <DownloadIcon fontSize="small" />
+                                                    </button>
+                                                    {/* 🚨 BOTÓN DE PDF AGREGADO */}
+                                                    <button
+                                                        onClick={() => handleExportPDF(sim.codigo_simulacion)}
+                                                        className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                                                        title="Exportar PDF"
+                                                    >
+                                                        <PictureAsPdfIcon fontSize="small" />
                                                     </button>
                                                 </div>
                                             </td>
