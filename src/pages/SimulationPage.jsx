@@ -12,6 +12,8 @@ import SavingsIcon from '@mui/icons-material/Savings';
 import QueryStatsIcon from '@mui/icons-material/QueryStats';
 import PaymentsIcon from '@mui/icons-material/Payments';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -737,27 +739,10 @@ const SimulationPage = () => {
 
                 {result && (
                     <div id="simulation-result" className="animate-in fade-in slide-in-from-bottom-5 duration-700">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-                            {[
-                                { label: 'Monto a Financiar', value: `${selectedUnit?.moneda === 2 ? '$' : 'S/'} ${parseFloat(result.resumen?.monto_financiar || 0).toFixed(2)}`, icon: <PaymentsIcon sx={{ fontSize: 18 }} /> },
-                                { label: 'Cuota Mensual', value: `${selectedUnit?.moneda === 2 ? '$' : 'S/'} ${parseFloat(result.resumen?.cuota_base || 0).toFixed(2)}`, icon: <ShowChartIcon sx={{ fontSize: 18 }} /> },
-                                { label: 'TEA', value: `${parseFloat(result.resumen?.tasa_efectiva_anual || result.tea || 0).toFixed(2)}%`, icon: <QueryStatsIcon sx={{ fontSize: 18 }} /> },
-                                { label: 'Interés Total', value: `${selectedUnit?.moneda === 2 ? '$' : 'S/'} ${parseFloat(result.resumen?.total_intereses || 0).toFixed(2)}`, icon: <QueryStatsIcon sx={{ fontSize: 18 }} /> }
-                            ].map((stat, i) => (
-                                <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all group">
-                                    <div className="text-brand-blue/30 group-hover:text-brand-blue transition-colors">{stat.icon}</div>
-                                    <div>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1.5">{stat.label}</p>
-                                        <p className="text-base font-black text-gray-900 leading-none">{stat.value}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-
                         {/* ── Indicadores de Rentabilidad ── */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                             <div className="col-span-2 md:col-span-4 flex items-center gap-2 mb-1">
-                                <div className="w-1 h-3 bg-[#F97316] rounded-full"></div>
+                                <div className="w-1 h-3 bg-brand-orange rounded-full"></div>
                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Indicadores de Rentabilidad</p>
                             </div>
                             {[
@@ -765,33 +750,40 @@ const SimulationPage = () => {
                                     label: 'Tasa de Descuento',
                                     sublabel: 'COK anual (8% fijo)',
                                     value: `${parseFloat(result.resumen?.tasa_descuento ?? 8).toFixed(2)}%`,
-                                    accent: '#3B82F6'
+                                    accent: '#3B82F6',
+                                    icon: <TrendingDownIcon sx={{ fontSize: 16 }} />
                                 },
                                 {
                                     label: 'TIR Mensual',
-                                    sublabel: 'Tasa Interna de Retorno',
+                                    sublabel: 'TIR Proyectada',
                                     value: `${parseFloat(result.resumen?.tir || 0).toFixed(6)}%`,
-                                    accent: '#10B981'
+                                    accent: '#10B981',
+                                    icon: <ShowChartIcon sx={{ fontSize: 16 }} />
                                 },
                                 {
                                     label: 'TCEA',
                                     sublabel: 'Costo Efectivo Anual',
                                     value: `${parseFloat(result.resumen?.tcea || 0).toFixed(4)}%`,
-                                    accent: '#F97316'
+                                    accent: '#F97316',
+                                    icon: <AccountBalanceWalletIcon sx={{ fontSize: 16 }} />
                                 },
                                 {
                                     label: 'VAN',
                                     sublabel: 'Valor Actual Neto',
                                     value: `S/ ${parseFloat(result.resumen?.van || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                                    accent: parseFloat(result.resumen?.van || 0) >= 0 ? '#10B981' : '#EF4444'
+                                    accent: parseFloat(result.resumen?.van || 0) >= 0 ? '#10B981' : '#EF4444',
+                                    icon: <AccountBalanceIcon sx={{ fontSize: 16 }} />
                                 }
                             ].map((stat, i) => (
-                                <div key={i} className="bg-[#0F172A] p-4 rounded-2xl border border-white/5 flex items-center gap-4 hover:border-white/10 transition-all group">
-                                    <div className="w-0.5 h-10 rounded-full flex-shrink-0" style={{ backgroundColor: stat.accent }}></div>
+                                <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center gap-4 hover:shadow-lg transition-all group relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: stat.accent }}></div>
+                                    <div className="p-2 rounded-xl bg-gray-50 text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all" style={{ color: stat.accent }}>
+                                        {stat.icon}
+                                    </div>
                                     <div className="min-w-0">
-                                        <p className="text-[9px] font-black text-white/30 uppercase tracking-widest leading-none mb-0.5">{stat.label}</p>
-                                        <p className="text-[8px] font-bold text-white/20 uppercase leading-none mb-1.5">{stat.sublabel}</p>
-                                        <p className="text-sm font-black leading-none truncate" style={{ color: stat.accent }}>{stat.value}</p>
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
+                                        <p className="text-[13px] font-black leading-none truncate mb-1" style={{ color: stat.accent }}>{stat.value}</p>
+                                        <p className="text-[8px] font-bold text-gray-300 uppercase leading-none">{stat.sublabel}</p>
                                     </div>
                                 </div>
                             ))}
@@ -839,37 +831,37 @@ const SimulationPage = () => {
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
                                     <thead className="bg-[#EEE] text-[8px] font-black text-brand-dark uppercase tracking-[0.2em] border-b-2 border-brand-blue/10">
-                                    <tr>
-                                        <th className="px-2 py-3">N°</th>
-                                        <th className="px-2 py-3">Fecha Pago</th>
-                                        <th className="px-3 py-3">TEA%</th>
-                                        <th className="px-3 py-3">TEM%</th>
-                                        <th className="px-3 py-3">Saldo Inicial</th>
-                                        <th className="px-3 py-3">Interés</th>
-                                        <th className="px-3 py-3">Amortización</th>
-                                        <th className="px-3 py-3">Seg. Desgrav.</th>
-                                        <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue">Cuota Total</th>
-                                        <th className="px-3 py-3">Saldo Final</th>
-                                    </tr>
+                                        <tr>
+                                            <th className="px-2 py-3">N°</th>
+                                            <th className="px-2 py-3">Fecha Pago</th>
+                                            <th className="px-3 py-3">TEA%</th>
+                                            <th className="px-3 py-3">TEM%</th>
+                                            <th className="px-3 py-3">Saldo Inicial</th>
+                                            <th className="px-3 py-3">Interés</th>
+                                            <th className="px-3 py-3">Amortización</th>
+                                            <th className="px-3 py-3">Seg. Desgrav.</th>
+                                            <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue">Cuota Total</th>
+                                            <th className="px-3 py-3">Saldo Final</th>
+                                        </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50 text-[9px] font-bold text-gray-700">
-                                    {result.detalles.map((d, index) => {
-                                        const rowClass = d.numero_cuota === 0 ? 'bg-gray-50/50 italic opacity-60 text-gray-400' : '';
-                                        return (
-                                            <tr key={index} className={`border-b border-gray-50 hover:bg-brand-blue/[0.02] transition-colors ${rowClass}`}>
-                                                <td className="px-2 py-2.5 font-black text-brand-blue">#{d.numero_cuota}</td>
-                                                <td className="px-2 py-2.5 text-center text-gray-500">{new Date(d.fecha_vencimiento).toLocaleDateString('es-PE')}</td>
-                                                <td className="px-3 py-2.5 text-center text-gray-500">{d.tea ? `${parseFloat(d.tea).toFixed(2)}%` : '—'}</td>
-                                                <td className="px-3 py-2.5 text-center text-gray-500">{d.tem ? `${parseFloat(d.tem).toFixed(4)}%` : '—'}</td>
-                                                <td className="px-3 py-2.5 text-gray-600 font-bold">S/ {parseFloat(d.saldo_inicial || d.saldo_inicio || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                <td className="px-3 py-2.5 font-black text-brand-blue bg-brand-blue/[0.01]">S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                <td className="px-3 py-2.5 text-gray-900 font-black">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                            </tr>
-                                        );
-                                    })}
+                                        {result.detalles.map((d, index) => {
+                                            const rowClass = d.numero_cuota === 0 ? 'bg-gray-50/50 italic opacity-60 text-gray-400' : '';
+                                            return (
+                                                <tr key={index} className={`border-b border-gray-50 hover:bg-brand-blue/[0.02] transition-colors ${rowClass}`}>
+                                                    <td className="px-2 py-2.5 font-black text-brand-blue">#{d.numero_cuota}</td>
+                                                    <td className="px-2 py-2.5 text-center text-gray-500">{new Date(d.fecha_vencimiento).toLocaleDateString('es-PE')}</td>
+                                                    <td className="px-3 py-2.5 text-center text-gray-500">{d.tea ? `${parseFloat(d.tea).toFixed(2)}%` : '—'}</td>
+                                                    <td className="px-3 py-2.5 text-center text-gray-500">{d.tem ? `${parseFloat(d.tem).toFixed(4)}%` : '—'}</td>
+                                                    <td className="px-3 py-2.5 text-gray-600 font-bold">S/ {parseFloat(d.saldo_inicial || d.saldo_inicio || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 font-black text-brand-blue bg-brand-blue/[0.01]">S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-900 font-black">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
