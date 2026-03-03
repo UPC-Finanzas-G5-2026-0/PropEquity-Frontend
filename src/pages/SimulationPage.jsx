@@ -39,7 +39,6 @@ const SimulationPage = () => {
         categoria_integrador: 'Menores ingresos',
         vivienda_sostenible: initialUnitFromState?.es_sostenible || false,
         ifi_seleccionada: '',
-        tipo_seguro: 'individual',
         codigo_tipo_tasa: '2', // 1: Nominal, 2: Efectiva
         tasa_anual: '10',
         capitalizacion: 'Mensual', // Opciones: Mensual, Bimestral, Trimestral
@@ -113,6 +112,8 @@ const SimulationPage = () => {
     const [saving, setSaving] = useState(false);
     const [prospectStatus, setProspectStatus] = useState('');
     const [prospectIFM, setProspectIFM] = useState(0);
+    // 👇 NUEVO: Estado para saber si el prospecto buscado es mancomunado
+    const [isProspectMancomunado, setIsProspectMancomunado] = useState(false);
 
     // Carga de Simulación Guardada
     useEffect(() => {
@@ -147,7 +148,6 @@ const SimulationPage = () => {
                     es_integrador: data.tipo_bbp === 'integrador',
                     vivienda_sostenible: data.tipo_bbp === 'sostenible',
                     ifi_seleccionada: data.ifi_seleccionada || '',
-                    tipo_seguro: 'individual',
                     codigo_tipo_tasa: String(data.tipo_tasa || '2'),
                     tasa_anual: String(data.tasa_anual || '10'),
                     capitalizacion: data.capitalizacion || 'Mensual',
@@ -210,7 +210,6 @@ const SimulationPage = () => {
         setServerError(null);
     };
 
-    // 👇 LOGICA INTELIGENTE EN EL SELECTOR 👇
     const handleCustomChange = (name, value) => {
         setFormData(prev => {
             const newData = { ...prev, [name]: String(value) };
@@ -248,17 +247,23 @@ const SimulationPage = () => {
                         const data = await response.json();
                         setProspectIFM(data.ifm);
                         setProspectStatus(`✓ Ingresos cargados (${data.type})`);
+                        // Detectamos internamente si el prospecto tiene ingresos mancomunados
+                        const typeStr = String(data.type || '').toLowerCase();
+                        setIsProspectMancomunado(typeStr.includes('mancomunado') || typeStr.includes('conyuge') || typeStr.includes('casado'));
                     } else {
                         setProspectIFM(0);
                         setProspectStatus('⚠ ID no encontrado en BD');
+                        setIsProspectMancomunado(false);
                     }
                 } catch (error) {
                     setProspectIFM(0);
                     setProspectStatus('⚠ Error de red');
+                    setIsProspectMancomunado(false);
                 }
             } else {
                 setProspectIFM(0);
                 setProspectStatus('');
+                setIsProspectMancomunado(false);
             }
         };
         const timer = setTimeout(fetchProspect, 600);
@@ -309,6 +314,24 @@ const SimulationPage = () => {
         return BBP_RANGES.find(r => pPEN >= r.min && pPEN <= r.max) || null;
     };
 
+    // REGLA DE NEGOCIO: Bono BBP vs Tasa Nominal
+    useEffect(() => {
+        if (!formData.sin_bono) {
+            // Si hay bono aplicado, forzamos la Tasa Efectiva (2)
+            if (formData.codigo_tipo_tasa === '1') {
+                setFormData(prev => ({ ...prev, codigo_tipo_tasa: '2' }));
+            }
+        }
+
+        // Si el usuario cambia manualmente a Nominal, quitamos el bono
+        if (formData.codigo_tipo_tasa === '1') {
+            if (!formData.sin_bono) {
+                setFormData(prev => ({ ...prev, sin_bono: true }));
+            }
+        }
+    }, [formData.sin_bono, formData.codigo_tipo_tasa]);
+
+
     useEffect(() => {
         if (selectedUnit) {
             const m = selectedUnit.moneda || selectedUnit.codigo_moneda;
@@ -331,7 +354,13 @@ const SimulationPage = () => {
         }
     }, [selectedUnit, formData.vivienda_sostenible, formData.es_integrador, formData.categoria_integrador, formData.sin_bono, formData.ha_recibido_apoyo, formData.tiene_credito_activo, formData.tipo_cambio, user?.ingreso_mensual]);
 
-    // Aplicador automático de las tasas del Banco
+    useEffect(() => {
+        if (formData.ifi_seleccionada && formData.codigo_tipo_tasa === '1') {
+            setFormData(prev => ({ ...prev, codigo_tipo_tasa: '2' }));
+        }
+    }, [formData.ifi_seleccionada]);
+
+    // CÁLCULO INTERNO: ASIGNA EL TIPO DE SEGURO SIN PREGUNTARLE AL USUARIO
     useEffect(() => {
         if (!formData.ifi_seleccionada || !selectedUnit) return;
         const p = selectedUnit.precio_venta;
@@ -371,7 +400,13 @@ const SimulationPage = () => {
         const config = bankRules[formData.ifi_seleccionada];
         if (config) {
             const rule = config.rates.find(r => montoFinanciar <= r.max) || config.rates[config.rates.length - 1];
-            const seguroValue = formData.tipo_seguro === 'mancomunado' ? config.seguro_mancomunado : config.seguro_individual;
+
+            // Determinamos internamente si es mancomunado (Si es asesor mira el prospecto, si es cliente mira su propio perfil)
+            const isMancomunado = userRole === 'asesor'
+                ? isProspectMancomunado
+                : (parseFloat(user?.ingreso_conyuge || 0) > 0 || !!user?.nombre_conyuge);
+
+            const seguroValue = isMancomunado ? config.seguro_mancomunado : config.seguro_individual;
 
             setFormData(prev => ({
                 ...prev,
@@ -380,7 +415,7 @@ const SimulationPage = () => {
                 seguro_desgravamen: seguroValue
             }));
         }
-    }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp, formData.tipo_seguro]);
+    }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp, userRole, isProspectMancomunado, user?.ingreso_conyuge, user?.nombre_conyuge]);
 
     const handleSimulate = async () => {
         if (userRole === 'administrador') {
@@ -616,18 +651,7 @@ const SimulationPage = () => {
                                 </h3>
                                 <CustomSelect label="Entidad (IFI)" value={formData.ifi_seleccionada} showInfo={true} onChange={(val) => handleCustomChange('ifi_seleccionada', val)} options={[{ id: '', label: 'Cálculo Genérico' }, { id: 'BCP', label: 'BCP' }, { id: 'BBVA', label: 'BBVA' }, { id: 'Interbank', label: 'Interbank' }, { id: 'Pichincha', label: 'Banco Pichincha' }, { id: 'GNB', label: 'GNB' }]} />
 
-                                <div className={!formData.ifi_seleccionada ? 'opacity-50 pointer-events-none' : ''}>
-                                    <CustomSelect
-                                        label="Tipo de Seguro"
-                                        value={formData.tipo_seguro}
-                                        showInfo={false}
-                                        onChange={(val) => handleCustomChange('tipo_seguro', val)}
-                                        options={[
-                                            { id: 'individual', label: 'Individual' },
-                                            { id: 'mancomunado', label: 'Mancomunado' }
-                                        ]}
-                                    />
-                                </div>
+                                {/* EL SELECTOR "TIPO DE SEGURO" FUE ELIMINADO COMO SE SOLICITÓ */}
 
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tasa Anual (%)</label>
@@ -637,7 +661,6 @@ const SimulationPage = () => {
                                     <CustomSelect label="Tipo de Tasa" value={formData.ifi_seleccionada ? '2' : formData.codigo_tipo_tasa} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_tasa', val)} options={[{ id: '1', label: 'Nominal (TNA)' }, { id: '2', label: 'Efectiva (TEA)' }]} />
                                 </div>
 
-                                {/* 👇 AQUI ESTA LA CAPITALIZACION RESTAURADA 👇 */}
                                 <div className={`transition-all duration-300 ${formData.codigo_tipo_tasa !== '1' ? 'opacity-30 pointer-events-none' : 'opacity-100 mb-2'}`}>
                                     <CustomSelect
                                         label="Capitalización"
@@ -654,6 +677,7 @@ const SimulationPage = () => {
 
                                 <div>
                                     <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Seguro Desgravamen (%)</label>
+                                    {/* Mantenemos el campo visible por si necesitan ver la tasa que se auto-calcula */}
                                     <input type="number" name="seguro_desgravamen" value={formData.seguro_desgravamen} onChange={handleChange} className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-black text-gray-900 text-sm transition-all" />
                                 </div>
                             </div>
