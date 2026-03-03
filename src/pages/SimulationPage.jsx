@@ -42,7 +42,7 @@ const SimulationPage = () => {
         tipo_seguro: 'individual',
         codigo_tipo_tasa: '2', // 1: Nominal, 2: Efectiva
         tasa_anual: '10',
-        capitalizacion: 'Mensual',
+        capitalizacion: 'Mensual', // Opciones: Mensual, Bimestral, Trimestral
         plazo_meses: '240',
         codigo_tipo_gracia: '1',
         meses_gracia: '0',
@@ -55,11 +55,15 @@ const SimulationPage = () => {
 
     const [temValue, setTemValue] = useState('--');
 
-    // Consultar TEM desde backend
+    // Consultar TEM desde backend solo si es Tasa Efectiva
     useEffect(() => {
         const fetchTEM = async () => {
             if (!formData.tasa_anual) {
                 setTemValue('--');
+                return;
+            }
+            if (formData.codigo_tipo_tasa === '1') {
+                setTemValue('Aplica según Cap.');
                 return;
             }
             try {
@@ -74,7 +78,7 @@ const SimulationPage = () => {
             }
         };
         fetchTEM();
-    }, [formData.tasa_anual]);
+    }, [formData.tasa_anual, formData.codigo_tipo_tasa]);
 
     const handleSaveSimulation = async () => {
         if (!result || !lastPayload) {
@@ -206,8 +210,24 @@ const SimulationPage = () => {
         setServerError(null);
     };
 
+    // 👇 LOGICA INTELIGENTE EN EL SELECTOR 👇
     const handleCustomChange = (name, value) => {
-        setFormData(prev => ({ ...prev, [name]: String(value) }));
+        setFormData(prev => {
+            const newData = { ...prev, [name]: String(value) };
+
+            // Si el usuario cambia a Tasa Nominal, quitamos el Banco y desactivamos el Bono
+            if (name === 'codigo_tipo_tasa' && String(value) === '1') {
+                newData.sin_bono = true;
+                newData.ifi_seleccionada = '';
+            }
+
+            // Si el usuario elige un Banco, forzamos a Tasa Efectiva
+            if (name === 'ifi_seleccionada' && String(value) !== '') {
+                newData.codigo_tipo_tasa = '2';
+            }
+
+            return newData;
+        });
         setServerError(null);
     };
 
@@ -289,24 +309,6 @@ const SimulationPage = () => {
         return BBP_RANGES.find(r => pPEN >= r.min && pPEN <= r.max) || null;
     };
 
-    // REGLA DE NEGOCIO: Bono BBP vs Tasa Nominal
-    useEffect(() => {
-        if (!formData.sin_bono) {
-            // Si hay bono aplicado, forzamos la Tasa Efectiva (2)
-            if (formData.codigo_tipo_tasa === '1') {
-                setFormData(prev => ({ ...prev, codigo_tipo_tasa: '2' }));
-            }
-        }
-
-        // Si el usuario cambia manualmente a Nominal, quitamos el bono
-        if (formData.codigo_tipo_tasa === '1') {
-            if (!formData.sin_bono) {
-                setFormData(prev => ({ ...prev, sin_bono: true }));
-            }
-        }
-    }, [formData.sin_bono, formData.codigo_tipo_tasa]);
-
-
     useEffect(() => {
         if (selectedUnit) {
             const m = selectedUnit.moneda || selectedUnit.codigo_moneda;
@@ -329,12 +331,7 @@ const SimulationPage = () => {
         }
     }, [selectedUnit, formData.vivienda_sostenible, formData.es_integrador, formData.categoria_integrador, formData.sin_bono, formData.ha_recibido_apoyo, formData.tiene_credito_activo, formData.tipo_cambio, user?.ingreso_mensual]);
 
-    useEffect(() => {
-        if (formData.ifi_seleccionada && formData.codigo_tipo_tasa === '1') {
-            setFormData(prev => ({ ...prev, codigo_tipo_tasa: '2' }));
-        }
-    }, [formData.ifi_seleccionada]);
-
+    // Aplicador automático de las tasas del Banco
     useEffect(() => {
         if (!formData.ifi_seleccionada || !selectedUnit) return;
         const p = selectedUnit.precio_venta;
@@ -378,6 +375,7 @@ const SimulationPage = () => {
 
             setFormData(prev => ({
                 ...prev,
+                codigo_tipo_tasa: '2', // Forzamos efectiva si hay banco
                 tasa_anual: rule.tea.toString(),
                 seguro_desgravamen: seguroValue
             }));
@@ -477,12 +475,6 @@ const SimulationPage = () => {
         } finally { setLoading(false); }
     };
 
-    useEffect(() => {
-        if (selectedUnit) {
-            setFormData(prev => ({ ...prev, vivienda_sostenible: selectedUnit.es_sostenible || false }));
-        }
-    }, [selectedUnit]);
-
     return (
         <div className="flex bg-[#F8FAFC] min-h-screen font-['Inter',_sans-serif]">
             <Sidebar />
@@ -579,29 +571,38 @@ const SimulationPage = () => {
                                 <div className="space-y-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
                                     <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center border-b border-gray-200 pb-2 mb-2">Modalidad de Bono</h4>
                                     {(() => {
+                                        // SI EL TIPO DE TASA ES NOMINAL (1), DESACTIVAMOS EL BONO VISUALMENTE
+                                        if (formData.codigo_tipo_tasa === '1') {
+                                            return (
+                                                <div className="w-full py-2 rounded-lg text-[9px] font-black uppercase text-center px-3 bg-gray-100 text-gray-400 border border-gray-200">
+                                                    Cambie a Tasa Efectiva (TEA) para usar bonos
+                                                </div>
+                                            );
+                                        }
+
                                         const p = parseFloat(selectedUnit?.precio_venta || 0);
                                         const mod = parseInt(selectedUnit?.codigo_modalidad || 0);
                                         const isOwner = user?.es_propietario_vivienda;
+
                                         if (p > 362100) return <p className="text-[8px] font-bold text-amber-500 p-2 uppercase text-center">R5: Solo Bono Integrador</p>;
                                         if (mod === 3) return <p className="text-[8px] font-bold text-red-400 p-2 uppercase text-center">Mejoramiento: Sin BBP</p>;
                                         if (isOwner) return <p className="text-[8px] font-bold text-red-400 p-2 uppercase text-center">Propietario actual: Sin BBP</p>;
 
                                         const isSostenible = selectedUnit?.es_sostenible || false;
-                                        // SI EL TIPO DE TASA ES NOMINAL (1), DESACTIVAMOS EL BONO VISUALMENTE
-                                        if (formData.codigo_tipo_tasa === '1') {
-                                            return (
-                                                <div className="w-full py-1.5 rounded-lg text-[9px] font-black uppercase text-left px-3 bg-brand-blue text-white shadow-md">
-                                                    Sin Bono (Tasa Nominal)
-                                                </div>
-                                            );
-                                        }
-
                                         const opciones = isSostenible
                                             ? [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Sostenible', sinBono: false, sostenible: true, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: true, integrador: true }]
                                             : [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Tradicional', sinBono: false, sostenible: false, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: false, integrador: true }];
                                         const activeIdx = formData.sin_bono ? 0 : formData.es_integrador ? 2 : 1;
                                         return opciones.map((op, idx) => (
-                                            <button key={op.label} type="button" onClick={() => { setFormData(prev => ({ ...prev, sin_bono: op.sinBono, vivienda_sostenible: op.sostenible, es_integrador: op.integrador })); setServerError(null); }} className={`w-full py-1.5 rounded-lg text-[9px] font-black uppercase text-left px-3 ${activeIdx === idx ? 'bg-brand-blue text-white shadow-md' : 'text-gray-400 hover:bg-gray-100/50'}`}>{op.label}</button>
+                                            <button key={op.label} type="button" onClick={() => {
+                                                // Al elegir un bono, forzamos la Tasa a Efectiva
+                                                setFormData(prev => {
+                                                    const newData = { ...prev, sin_bono: op.sinBono, vivienda_sostenible: op.sostenible, es_integrador: op.integrador };
+                                                    if (!op.sinBono) newData.codigo_tipo_tasa = '2';
+                                                    return newData;
+                                                });
+                                                setServerError(null);
+                                            }} className={`w-full py-1.5 rounded-lg text-[9px] font-black uppercase text-left px-3 ${activeIdx === idx ? 'bg-brand-blue text-white shadow-md' : 'text-gray-400 hover:bg-gray-100/50'}`}>{op.label}</button>
                                         ));
                                     })()}
                                 </div>
@@ -634,6 +635,21 @@ const SimulationPage = () => {
                                 </div>
                                 <div className={formData.ifi_seleccionada ? 'opacity-50 pointer-events-none' : ''}>
                                     <CustomSelect label="Tipo de Tasa" value={formData.ifi_seleccionada ? '2' : formData.codigo_tipo_tasa} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_tasa', val)} options={[{ id: '1', label: 'Nominal (TNA)' }, { id: '2', label: 'Efectiva (TEA)' }]} />
+                                </div>
+
+                                {/* 👇 AQUI ESTA LA CAPITALIZACION RESTAURADA 👇 */}
+                                <div className={`transition-all duration-300 ${formData.codigo_tipo_tasa !== '1' ? 'opacity-30 pointer-events-none' : 'opacity-100 mb-2'}`}>
+                                    <CustomSelect
+                                        label="Capitalización"
+                                        value={formData.capitalizacion}
+                                        showInfo={true}
+                                        onChange={(val) => handleCustomChange('capitalizacion', val)}
+                                        options={[
+                                            { id: 'Mensual', label: 'Mensual' },
+                                            { id: 'Bimestral', label: 'Bimestral' },
+                                            { id: 'Trimestral', label: 'Trimestral' }
+                                        ]}
+                                    />
                                 </div>
 
                                 <div>
@@ -728,7 +744,6 @@ const SimulationPage = () => {
                             <div className="p-4 border-b border-gray-50 flex justify-between items-center">
                                 <h3 className="text-xs font-black text-gray-900 uppercase tracking-tighter">Cronograma de Pagos</h3>
 
-                                {/* 👇 AQUÍ ESTABAN OCULTOS LOS BOTONES PARA EL ASESOR 👇 */}
                                 <div className="flex gap-2">
                                     {!result.codigo_simulacion && (
                                         <button
