@@ -38,7 +38,7 @@ const Sidebar = () => {
     // Simulaciones (solo asesores y clientes)
     { name: 'Simulaciones', path: '/simulador', roles: ['asesor', 'cliente'] },
 
-    { name: 'Mi Perfil', path: '/perfil', roles: ['cliente', 'asesor'] },
+    { name: 'Mi Perfil', path: '/perfil', roles: ['administrador', 'cliente', 'asesor'] },
     { name: 'Configuración', path: '/configuracion', roles: ['administrador', 'asesor', 'cliente'] },
   ];
 
