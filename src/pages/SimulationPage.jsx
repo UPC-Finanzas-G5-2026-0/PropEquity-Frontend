@@ -795,10 +795,10 @@ const SimulationPage = () => {
                         <div id="simulation-result" className="animate-in fade-in slide-in-from-bottom-5 duration-700">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                                 {[
-                                    { label: 'Monto a Financiar', value: `${selectedUnit?.moneda === 2 ? '$' : 'S/'} ${(result.resumen?.monto_financiar || 0).toLocaleString()}`, icon: <PaymentsIcon sx={{ fontSize: 18 }} /> },
-                                    { label: 'Cuota Mensual', value: `${selectedUnit?.moneda === 2 ? '$' : 'S/'} ${(result.resumen?.cuota_base || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <ShowChartIcon sx={{ fontSize: 18 }} /> },
+                                    { label: 'Monto a Financiar', value: `${selectedUnit?.moneda === 2 ? '$' : 'S/'} ${parseFloat(result.resumen?.monto_financiar || 0).toFixed(2)}`, icon: <PaymentsIcon sx={{ fontSize: 18 }} /> },
+                                    { label: 'Cuota Mensual', value: `${selectedUnit?.moneda === 2 ? '$' : 'S/'} ${parseFloat(result.resumen?.cuota_base || 0).toFixed(2)}`, icon: <ShowChartIcon sx={{ fontSize: 18 }} /> },
                                     { label: 'TEA', value: `${parseFloat(result.resumen?.tasa_efectiva_anual || result.tea || 0).toFixed(2)}%`, icon: <QueryStatsIcon sx={{ fontSize: 18 }} /> },
-                                    { label: 'TCEA', value: `${parseFloat(result.resumen?.tcea || result.tcea || 0).toFixed(2)}%`, icon: <QueryStatsIcon sx={{ fontSize: 18 }} /> }
+                                    { label: 'Interés', value: `${selectedUnit?.moneda === 2 ? '$' : 'S/'} ${parseFloat(result.resumen?.total_intereses || 0).toFixed(2)}`, icon: <QueryStatsIcon sx={{ fontSize: 18 }} /> }
                                 ].map((stat, i) => (
                                     <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all group">
                                         <div className="text-brand-blue/30 group-hover:text-brand-blue transition-colors">{stat.icon}</div>
