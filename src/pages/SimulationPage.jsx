@@ -91,6 +91,8 @@ const SimulationPage = () => {
         }
     };
     const { user } = useAuth();
+    const userRole = (user?.rol_rel?.tipo_rol || user?.role || user?.rol || '').toLowerCase();
+    const userId = user?.codigo_usuario || user?.id;
     const [units, setUnits] = useState([]);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
@@ -357,12 +359,13 @@ const SimulationPage = () => {
                 tipo_cambio: parseFloat(formData.tipo_cambio),
                 ha_recibido_apoyo: formData.ha_recibido_apoyo,
                 tiene_credito_activo: formData.tiene_credito_activo,
-                codigo_cliente: user?.role === 'Cliente' ? user.id : null,
-                codigo_asesor: user?.role === 'Asesor' ? user.id : null,
+                codigo_cliente: userRole === 'cliente' ? userId : null,
+                codigo_asesor: userRole === 'asesor' ? userId : null,
+                codigo_prospecto: formData.codigo_prospecto || null,
                 fecha_inicio_prestamo: formData.fecha_inicio_prestamo
             };
             setLastPayload(payload); // Guardar payload para usar en 'Guardar Simulación'
-            const response = await createSimulation(payload, false); // save=false = preview
+            const response = await createSimulation(payload, true); // SIEMPRE guardamos al generar (pedido por el cliente)
             if (response.success) {
                 const data = response.data;
                 // Normalizar: el backend devuelve "cronograma" con campos distintos
