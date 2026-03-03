@@ -32,8 +32,8 @@ const Sidebar = () => {
     // Cliente: registrar/ver su propia propiedad (solo lo ve él mismo)
     { name: 'Mis Propiedades', path: '/propiedades', roles: ['cliente'] },
 
-    // Asesor: catálogo técnico
-    { name: 'Catálogo', path: '/catalogo', roles: ['asesor'] },
+    // Asesor y Cliente: catálogo técnico
+    { name: 'Catálogo', path: '/catalogo', roles: ['asesor', 'cliente'] },
 
     // Simulaciones (solo asesores y clientes)
     { name: 'Simulaciones', path: '/simulador', roles: ['asesor', 'cliente'] },
