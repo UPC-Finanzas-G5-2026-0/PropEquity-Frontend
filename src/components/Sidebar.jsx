@@ -25,7 +25,10 @@ const Sidebar = () => {
   // 3. Definimos el menú con los accesos estrictos
   const allMenuItems = [
     { name: 'Inicio', path: getHomePath(currentRole), roles: ['administrador', 'asesor', 'cliente'] },
-    { name: 'Propiedades', path: '/propiedades', roles: ['administrador', 'asesor', 'cliente'] },
+
+    //  Solo 'administrador' puede ver Propiedades 👇
+    { name: 'Propiedades', path: '/propiedades', roles: ['administrador'] },
+
     { name: 'Catálogo', path: '/catalogo', roles: ['administrador', 'asesor', 'cliente'] },
     { name: 'Simulaciones', path: '/simulador', roles: ['administrador', 'asesor', 'cliente'] },
     { name: 'Mi Perfil', path: '/perfil', roles: ['cliente', 'asesor'] },
@@ -41,47 +44,47 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 bg-brand-dark h-screen sticky top-0 flex flex-col p-6 text-white shrink-0 overflow-y-auto">
-      <div className="mb-5 mt-2 px-2 flex flex-col items-center text-center gap-2">
-        <img
-          src={logo}
-          alt="PropEquity Logo"
-          className="w-16 h-16 rounded-2xl object-cover shadow-sm border border-white/10"
-        />
-        <div className="text-lg font-bold tracking-wide">
-          PropEquity
+      <aside className="w-64 bg-brand-dark h-screen sticky top-0 flex flex-col p-6 text-white shrink-0 overflow-y-auto">
+        <div className="mb-5 mt-2 px-2 flex flex-col items-center text-center gap-2">
+          <img
+              src={logo}
+              alt="PropEquity Logo"
+              className="w-16 h-16 rounded-2xl object-cover shadow-sm border border-white/10"
+          />
+          <div className="text-lg font-bold tracking-wide">
+            PropEquity
+          </div>
         </div>
-      </div>
 
-      <nav className="flex-1">
-        <ul className="space-y-0.5">
-          {menuItems.map((item) => (
-            <li key={item.name}>
-              <NavLink
-                to={item.path}
-                className={({ isActive }) =>
-                  `block py-2.5 px-4 rounded-lg text-[15px] transition-colors font-medium ${isActive
-                    ? 'bg-white/10 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                  }`
-                }
-              >
-                {item.name}
-              </NavLink>
-            </li>
-          ))}
-        </ul>
-      </nav>
+        <nav className="flex-1">
+          <ul className="space-y-0.5">
+            {menuItems.map((item) => (
+                <li key={item.name}>
+                  <NavLink
+                      to={item.path}
+                      className={({ isActive }) =>
+                          `block py-2.5 px-4 rounded-lg text-[15px] transition-colors font-medium ${isActive
+                              ? 'bg-white/10 text-white'
+                              : 'text-gray-400 hover:text-white hover:bg-white/5'
+                          }`
+                      }
+                  >
+                    {item.name}
+                  </NavLink>
+                </li>
+            ))}
+          </ul>
+        </nav>
 
-      <div className="mt-auto pt-3 border-t border-white/10">
-        <button
-          onClick={handleLogout}
-          className="w-full text-left py-2.5 px-4 rounded-lg text-[15px] text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors font-medium"
-        >
-          Cerrar Sesión
-        </button>
-      </div>
-    </aside>
+        <div className="mt-auto pt-3 border-t border-white/10">
+          <button
+              onClick={handleLogout}
+              className="w-full text-left py-2.5 px-4 rounded-lg text-[15px] text-red-400 hover:text-red-300 hover:bg-white/5 transition-colors font-medium"
+          >
+            Cerrar Sesión
+          </button>
+        </div>
+      </aside>
   );
 };
 
