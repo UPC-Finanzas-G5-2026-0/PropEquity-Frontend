@@ -31,7 +31,8 @@ const ClientSimulationsPage = () => {
       try {
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         // Hacemos el llamado directo al backend para traer las simulaciones de este cliente específico
-        const response = await fetch(`http://localhost:8000/api/v1/simulator/client/${id}`, {
+        const API_URL = process.env.REACT_APP_API_URL || 'https://propequity-backend.onrender.com';
+        const response = await fetch(`${API_URL}/api/v1/simulator/client/${id}`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

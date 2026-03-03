@@ -15,7 +15,7 @@ const getImageUrl = (fotoPath) => {
     if (!fotoPath) return null; // Si no hay foto, retorna null para que tu código muestre el ícono de Location
     if (fotoPath.startsWith('http')) return fotoPath; // Si es de Cloudinary, pasa directo
 
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    const API_URL = process.env.REACT_APP_API_URL || 'https://propequity-backend.onrender.com';
     return `${API_URL}${fotoPath}`;
 };
 

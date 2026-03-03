@@ -14,7 +14,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 const getImageUrl = (fotoPath) => {
   if (!fotoPath) return null;
   if (fotoPath.startsWith('http')) return fotoPath;
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://propequity-backend.onrender.com';
   return `${API_URL}${fotoPath}`;
 };
 

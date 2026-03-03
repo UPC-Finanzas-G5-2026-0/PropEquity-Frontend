@@ -15,7 +15,7 @@ const getImageUrl = (fotoPath) => {
   // Si empieza con '/', significa que es una ruta local en /public/ (Ideal para desarrollo/demos)
   if (fotoPath.startsWith('/')) return fotoPath;
 
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://propequity-backend.onrender.com';
   return `${API_URL}${fotoPath}`;
 };
 

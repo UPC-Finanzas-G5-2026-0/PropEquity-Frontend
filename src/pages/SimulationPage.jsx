@@ -244,7 +244,7 @@ const SimulationPage = () => {
                 try {
                     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
-                    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+                    const API_URL = process.env.REACT_APP_API_URL || 'https://propequity-backend.onrender.com';
 
                     const response = await fetch(`${API_URL}/api/v1/simulator/check-income/${formData.codigo_prospecto}`, {
                         headers: {
