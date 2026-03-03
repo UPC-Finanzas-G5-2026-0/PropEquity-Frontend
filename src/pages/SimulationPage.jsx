@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import Sidebar from '../components/Sidebar';
@@ -26,6 +25,7 @@ const SimulationPage = () => {
     const hasAutoSimulated = React.useRef(false);
 
     const [formData, setFormData] = useState({
+        codigo_prospecto: '', // <-- ESTADO AGREGADO PARA EL ASESOR
         codigo_unidad: initialUnitFromState ? String(initialUnitFromState.codigo_unidad) : '',
         cuota_inicial: '10',
         gastos_tasacion: '0.00',
@@ -53,6 +53,7 @@ const SimulationPage = () => {
     });
 
     const [temValue, setTemValue] = useState('--');
+
     // Consultar TEM desde backend cada vez que cambia la tasa anual
     useEffect(() => {
         const fetchTEM = async () => {
@@ -73,6 +74,7 @@ const SimulationPage = () => {
         };
         fetchTEM();
     }, [formData.tasa_anual]);
+
     // Guardar simulación — llama al backend con save=true para persistir en BD
     const handleSaveSimulation = async () => {
         if (!result || !lastPayload) {
@@ -93,6 +95,7 @@ const SimulationPage = () => {
             setSaving(false);
         }
     };
+
     const { user } = useAuth();
     const userRole = (user?.rol_rel?.tipo_rol || user?.role || user?.rol || '').toLowerCase();
     const userId = user?.codigo_usuario || user?.id;
@@ -108,11 +111,8 @@ const SimulationPage = () => {
     const [prospectIFM, setProspectIFM] = useState(0);
 
     // Cargar simulación guardada si hay un ID en la URL (modo solo lectura)
-    // Si no hay ID, limpiar el resultado para empezar desde cero
     useEffect(() => {
         if (!simId) {
-            // Si no hay ID, pero venimos del catálogo, ya seteamos la unidad en el inicializador de useState
-            // Solo limpiamos si realmente queremos empezar una simulación "vacía" desde cero
             if (!initialUnitFromState) {
                 setResult(null);
                 setServerError(null);
@@ -130,8 +130,9 @@ const SimulationPage = () => {
                 if (data.detalles && !data.cronograma) data.cronograma = data.detalles;
                 setResult(data);
 
-                // IMPORTANTE: Poblamos el formulario con los datos de la simulación guardada
+                // Poblamos el formulario con los datos de la simulación guardada
                 setFormData({
+                    codigo_prospecto: String(data.codigo_prospecto || ''),
                     codigo_unidad: String(data.codigo_unit || data.codigo_unidad || ''),
                     cuota_inicial: String(data.cuota_inicial || '0'),
                     gastos_tasacion: String(data.tasacion || '0.00'),
@@ -164,53 +165,29 @@ const SimulationPage = () => {
         loadSavedSimulation();
     }, [simId, initialUnitFromState]);
 
-    // Función para obtener título según el tipo de error del backend
     const getErrorTitle = (errorMsg) => {
         const lowerMsg = errorMsg.toLowerCase();
-
-        if (lowerMsg.includes('90%') || lowerMsg.includes('financiamiento excede') || lowerMsg.includes('ltv')) {
-            return 'Financiamiento excede 90%';
-        }
-        if (lowerMsg.includes('cuota inicial') || lowerMsg.includes('inicial mínima') || lowerMsg.includes('10%')) {
-            return 'Cuota inicial insuficiente';
-        }
-        if (lowerMsg.includes('ingreso') || lowerMsg.includes('ratio') || lowerMsg.includes('40%') || lowerMsg.includes('50%')) {
-            return 'Capacidad de pago excedida';
-        }
-        if (lowerMsg.includes('plazo')) {
-            return 'Plazo fuera de rango';
-        }
-        if (lowerMsg.includes('bbp') || lowerMsg.includes('bono')) {
-            return 'Error con BBP';
-        }
-        if (lowerMsg.includes('precio') || lowerMsg.includes('mivivienda')) {
-            return 'Precio fuera de rango';
-        }
+        if (lowerMsg.includes('90%') || lowerMsg.includes('financiamiento excede') || lowerMsg.includes('ltv')) return 'Financiamiento excede 90%';
+        if (lowerMsg.includes('cuota inicial') || lowerMsg.includes('inicial mínima') || lowerMsg.includes('10%')) return 'Cuota inicial insuficiente';
+        if (lowerMsg.includes('ingreso') || lowerMsg.includes('ratio') || lowerMsg.includes('40%') || lowerMsg.includes('50%')) return 'Capacidad de pago excedida';
+        if (lowerMsg.includes('plazo')) return 'Plazo fuera de rango';
+        if (lowerMsg.includes('bbp') || lowerMsg.includes('bono')) return 'Error con BBP';
+        if (lowerMsg.includes('precio') || lowerMsg.includes('mivivienda')) return 'Precio fuera de rango';
         return 'Error de validación';
     };
-
-
 
     const selectedUnit = units.find(u => String(u.codigo_unidad) === formData.codigo_unidad);
 
     const fetchUnits = async () => {
         try {
-            // CAMBIO PEDIDO: Solo mis unidades y favoritos
             const response = await getUnits(0, 100, false, true);
             if (response.success) {
                 let finalUnits = [...response.data];
-
-                // 🛠️ FIX: Si venimos del catálogo con una unidad que NO es favorita aún, la inyectamos en la lista
-                // para que el CustomSelect pueda mostrarla y el usuario pueda simularla.
                 if (initialUnitFromState) {
                     const exists = finalUnits.some(u => String(u.codigo_unidad) === String(initialUnitFromState.codigo_unidad));
-                    if (!exists) {
-                        finalUnits.push(initialUnitFromState);
-                    }
+                    if (!exists) finalUnits.push(initialUnitFromState);
                 }
-
                 setUnits(finalUnits);
-
                 setFormData(prev => {
                     if (finalUnits.length > 0 && !prev.codigo_unidad && !simId && !initialUnitFromState) {
                         return { ...prev, codigo_unidad: String(finalUnits[0].codigo_unidad) };
@@ -227,13 +204,11 @@ const SimulationPage = () => {
         const { name, value } = e.target;
         if (e.target.type === 'number' && parseFloat(value) < 0) return;
         setFormData(prev => ({ ...prev, [name]: value }));
-        // RESULT: No limpiamos para que el usuario pueda ver el cambio en el "Análisis en Vivo"
         setServerError(null);
     };
 
     const handleCustomChange = (name, value) => {
         setFormData(prev => ({ ...prev, [name]: String(value) }));
-        // RESULT: No limpiamos para mantener estabilidad visual
         setServerError(null);
     };
 
@@ -243,12 +218,10 @@ const SimulationPage = () => {
                 setProspectStatus('Buscando...');
                 try {
                     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
                     const API_URL = process.env.REACT_APP_API_URL || 'https://propequity-backend.onrender.com';
 
                     const response = await fetch(`${API_URL}/api/v1/simulator/check-income/${formData.codigo_prospecto}`, {
                         headers: {
-
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         }
@@ -278,30 +251,22 @@ const SimulationPage = () => {
 
     useEffect(() => {
         fetchUnits();
-
-        // Refrescar cuando la ventana gana el foco (ej: vuelves de otra pestaña/página)
         const handleFocus = () => fetchUnits();
         window.addEventListener('focus', handleFocus);
-
         return () => window.removeEventListener('focus', handleFocus);
     }, []);
 
-    // 🚨 AUTO-SIMULACIÓN ROBUSTA: Se dispara cuando las unidades se cargan
     useEffect(() => {
         if (units.length > 0 && initialUnitFromState && !simId && !hasAutoSimulated.current) {
             const unitExists = units.some(u => String(u.codigo_unidad) === String(initialUnitFromState.codigo_unidad));
             if (unitExists) {
                 hasAutoSimulated.current = true;
-                // Pequeño delay para asegurar que React procesó el render con las unidades
-                setTimeout(() => {
-                    handleSimulate();
-                }, 100);
+                setTimeout(() => { handleSimulate(); }, 100);
             }
         }
     }, [units, initialUnitFromState, simId]);
 
-    // BBP según DS 004-2025-VIVIENDA - Rangos y montos oficiales
-    const BONO_INTEGRADOR = 3600; // Bono adicional para categorías vulnerables
+    const BONO_INTEGRADOR = 3600;
     const BBP_RANGES = [
         { min: 68800, max: 97800, rango: 'R1', tradicional: 35100, sostenible: 41400 },
         { min: 97801, max: 146900, rango: 'R2', tradicional: 28000, sostenible: 34300 },
@@ -313,27 +278,14 @@ const SimulationPage = () => {
     const calculateBBP = (precio, moneda, sostenible = false, integrador = false, tc = 3.80) => {
         let pPEN = parseFloat(precio);
         const isUSD = moneda === 2 || moneda === 'USD';
-
-        // Si es USD, convertir a soles para validar rango según normativa FMV
         if (isUSD) pPEN = pPEN * tc;
-
-        // Buscar rango aplicable
         const rangoAplicable = BBP_RANGES.find(r => pPEN >= r.min && pPEN <= r.max);
         if (!rangoAplicable) return '0';
-
-        // Base BBP según tipo de vivienda
         let bonoPEN = sostenible ? rangoAplicable.sostenible : rangoAplicable.tradicional;
-
-        // Agregar Bono Integrador si aplica (solo en R1-R4)
-        if (integrador && rangoAplicable.rango !== 'R5') {
-            bonoPEN += BONO_INTEGRADOR;
-        }
-
-        // Convertir el bono de vuelta a USD si la unidad está en esa moneda
+        if (integrador && rangoAplicable.rango !== 'R5') bonoPEN += BONO_INTEGRADOR;
         return isUSD ? (bonoPEN / tc).toFixed(2) : bonoPEN.toString();
     };
 
-    // Obtener info de rango para mostrar en UI
     const getRangoInfo = (precio, moneda, tc = 3.80) => {
         let pPEN = parseFloat(precio);
         const isUSD = moneda === 2 || moneda === 'USD';
@@ -344,8 +296,6 @@ const SimulationPage = () => {
     useEffect(() => {
         if (selectedUnit) {
             const m = selectedUnit.moneda || selectedUnit.codigo_moneda;
-
-            // BLINDAJE: Si ya recibió apoyo o tiene crédito activo, NO califica a BBP (Regla FMV)
             if (formData.sin_bono || formData.ha_recibido_apoyo || formData.tiene_credito_activo) {
                 setFormData(prev => ({ ...prev, bono_bbp: '0' }));
                 return;
@@ -397,8 +347,6 @@ const SimulationPage = () => {
     }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp]);
 
     const handleSimulate = async () => {
-
-        // Validar que codigo_unidad sea un entero válido
         const codigoUnidadInt = parseInt(formData.codigo_unidad);
         if (isNaN(codigoUnidadInt) || !formData.codigo_unidad) {
             setServerError({
@@ -408,7 +356,6 @@ const SimulationPage = () => {
             return;
         }
 
-        // Validar selección de entidad si modalidad es Tradicional o Integrador
         const bonoTradicional = !formData.sin_bono && !formData.vivienda_sostenible && !formData.es_integrador;
         const bonoIntegrador = formData.es_integrador;
         if ((bonoTradicional || bonoIntegrador) && !formData.ifi_seleccionada) {
@@ -425,9 +372,7 @@ const SimulationPage = () => {
         let finalCuotaInicial = cuotaType === 'porcentaje' ? (val / 100) * precio : val;
         const totalGastosIniciales = parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_estudio || 0) + parseFloat(formData.comision_activacion || 0);
 
-        // El backend realiza todas las validaciones
         setLoading(true);
-        // setResults(null); // Eliminado para evitar que la pantalla se "reinicie" visualmente
         setServerError(null);
         try {
             const TIPO_TASA_MAP = { '1': 'Nominal', '2': 'Efectiva' };
@@ -440,14 +385,12 @@ const SimulationPage = () => {
             const payload = {
                 codigo_unidad: parseInt(formData.codigo_unidad),
                 cuota_inicial: parseFloat(finalCuotaInicial),
-                // Gastos desglosados para el backend
                 tasacion: parseFloat(formData.gastos_tasacion || 0),
                 coste_notarial: parseFloat(formData.gastos_notariales || 0),
                 coste_registral: parseFloat(formData.gastos_estudio_titulos || 0),
                 comision_estudio: parseFloat(formData.comision_estudio || 0),
                 comision_activacion: parseFloat(formData.comision_activacion || 0),
                 gastos_iniciales: totalGastosIniciales,
-
                 tipo_bbp: tipoBbp,
                 categoria_integrador: formData.es_integrador ? formData.categoria_integrador : null,
                 ifi_seleccionada: formData.ifi_seleccionada || null,
@@ -466,14 +409,13 @@ const SimulationPage = () => {
                 codigo_prospecto: formData.codigo_prospecto || null,
                 fecha_inicio_prestamo: formData.fecha_inicio_prestamo
             };
-            setLastPayload(payload); // Guardar payload para usar en 'Guardar Simulación'
-            const response = await createSimulation(payload, false); // NO guardamos al generar (pedido por el commit anterior)
+            setLastPayload(payload);
+            const response = await createSimulation(payload, false);
             if (response.success) {
                 setResult(response.data);
                 setServerError(null);
                 setTimeout(() => { document.getElementById('simulation-result')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
             } else {
-                // Mostrar error del backend directamente
                 setServerError({
                     titulo: getErrorTitle(response.error),
                     mensaje: response.error
@@ -510,15 +452,39 @@ const SimulationPage = () => {
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start mb-6">
                     <div className="xl:col-span-9 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            {/* Inmueble */}
+
+                            {/* Inmueble y Plazo */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
                                     <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
                                     Propiedad y Plazo
                                 </h3>
+
+                                {/*  BLOQUE RESTAURADO PARA EL ASESOR  */}
+                                {userRole === 'asesor' && (
+                                    <div className="bg-brand-blue/5 p-3 rounded-xl border border-brand-blue/10 mb-2">
+                                        <label className="block text-[10px] font-black text-brand-blue uppercase tracking-widest mb-2 ml-1">
+                                            ID de Prospecto / Cliente
+                                        </label>
+                                        <input
+                                            type="number"
+                                            name="codigo_prospecto"
+                                            value={formData.codigo_prospecto}
+                                            onChange={handleChange}
+                                            placeholder="Ingresa el ID (ej. 5)"
+                                            className="w-full bg-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 border border-brand-blue/10 font-black text-gray-900 text-sm transition-all"
+                                        />
+                                        {prospectStatus && (
+                                            <p className={`text-[9px] font-black uppercase tracking-tight mt-2 ml-1 ${prospectStatus.includes('Error') || prospectStatus.includes('no encontrado') ? 'text-red-500' : prospectStatus.includes('Buscando') ? 'text-amber-500' : 'text-green-600'}`}>
+                                                {prospectStatus}
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                                {/*  FIN BLOQUE ASESOR  */}
+
                                 <CustomSelect label="Unidad" value={formData.codigo_unidad} showInfo={true} onChange={(val) => handleCustomChange('codigo_unidad', val)} options={units.map(u => ({ id: u.codigo_unidad, label: `${u.distrito_unidad} - ${u.direccion_unidad}` }))} />
 
-                                {/* Info del inmueble seleccionado */}
                                 {selectedUnit && (() => {
                                     const rangoInfo = getRangoInfo(selectedUnit.precio_venta, selectedUnit.moneda || selectedUnit.codigo_moneda, parseFloat(formData.tipo_cambio || 3.80));
                                     const m = selectedUnit.moneda === 2 || selectedUnit.codigo_moneda === 2;
@@ -650,6 +616,7 @@ const SimulationPage = () => {
                                     </label>
                                 </div>
                             </div>
+
                             {/* Banco */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
@@ -665,7 +632,6 @@ const SimulationPage = () => {
                                     <CustomSelect label="Tipo de Tasa" value={formData.ifi_seleccionada ? '2' : formData.codigo_tipo_tasa} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_tasa', val)} options={[{ id: '1', label: 'Nominal (TNA)' }, { id: '2', label: 'Efectiva (TEA)' }]} />
                                 </div>
 
-                                {/* Capitalización: deshabilitada si IFI seleccionada o tasa Efectiva */}
                                 <div className={`transition-all duration-300 ${formData.ifi_seleccionada || formData.codigo_tipo_tasa !== '1' ? 'opacity-30 h-auto pointer-events-none' : 'opacity-100 h-auto mb-2'}`}>
                                     <CustomSelect label="Capitalización" value={formData.capitalizacion} showInfo={true} onChange={(val) => handleCustomChange('capitalizacion', val)} options={[{ id: 'Diaria', label: 'Diaria' }, { id: 'Quincenal', label: 'Quincenal' }, { id: 'Mensual', label: 'Mensual' }, { id: 'Trimestral', label: 'Trimestral' }, { id: 'Semestral', label: 'Semestral' }]} />
                                 </div>
@@ -689,7 +655,6 @@ const SimulationPage = () => {
                                     <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Estudio de Títulos</label><input type="number" name="comision_estudio" value={formData.comision_estudio} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
                                     <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Com. Activación</label><input type="number" name="comision_activacion" value={formData.comision_activacion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
 
-                                    {/* Indicador % gastos cierre */}
                                     {selectedUnit && (() => {
                                         const totalGastos = parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_estudio || 0) + parseFloat(formData.comision_activacion || 0);
                                         const precio = parseFloat(selectedUnit.precio_venta || 0);
@@ -746,10 +711,19 @@ const SimulationPage = () => {
                                     })()}</p>
                                 </div>
 
-                                <div className="flex justify-between items-center pt-1"><p className="text-[8px] text-gray-400 uppercase font-black">Ingreso Familiar (IFM)</p><p className="text-[11px] font-black text-white">S/ {(parseFloat(user?.ingreso_mensual || 0) + parseFloat(user?.ingreso_conyuge || 0)).toLocaleString()}</p></div>
-                                {parseFloat(user?.ingreso_conyuge || 0) > 0 && (
+                                {/* 👇 BLOQUE RESTAURADO: MUESTRA IFM SEGÚN ROL 👇 */}
+                                <div className="flex justify-between items-center pt-1">
+                                    <p className="text-[8px] text-gray-400 uppercase font-black">Ingreso Familiar (IFM)</p>
+                                    <p className="text-[11px] font-black text-white">
+                                        S/ {userRole === 'asesor'
+                                        ? parseFloat(prospectIFM || 0).toLocaleString()
+                                        : (parseFloat(user?.ingreso_mensual || 0) + parseFloat(user?.ingreso_conyuge || 0)).toLocaleString()}
+                                    </p>
+                                </div>
+                                {parseFloat(user?.ingreso_conyuge || 0) > 0 && userRole !== 'asesor' && (
                                     <div className="flex justify-between items-center opacity-40 -mt-1"><p className="text-[6px] text-gray-300 uppercase font-bold tracking-tighter">└ T: S/ {parseFloat(user?.ingreso_mensual || 0).toLocaleString()} | C: S/ {parseFloat(user?.ingreso_conyuge || 0).toLocaleString()}</p></div>
                                 )}
+                                {/* 👆 FIN BLOQUE IFM 👆 */}
                             </div>
 
                             <div className="bg-white/5 p-3 rounded-xl border border-white/10 space-y-1.5">
@@ -850,58 +824,58 @@ const SimulationPage = () => {
                                 </div>
                                 <div className="overflow-x-auto"><table className="w-full text-left">
                                     <thead className="bg-[#EEE] text-[8px] font-black text-brand-dark uppercase tracking-[0.2em] border-b-2 border-brand-blue/10">
-                                        <tr>
-                                            <th className="px-2 py-3">N°</th>
-                                            <th className="px-2 py-3">Fecha Pago</th>
-                                            <th className="px-3 py-3">Saldo Inicial</th>
-                                            <th className="px-3 py-3">Interés</th>
-                                            <th className="px-3 py-3">Amortización</th>
-                                            <th className="px-3 py-3">Seg. Desgrav.</th>
-                                            <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue">Cuota Total</th>
-                                            <th className="px-3 py-3">Saldo Final</th>
-                                        </tr>
+                                    <tr>
+                                        <th className="px-2 py-3">N°</th>
+                                        <th className="px-2 py-3">Fecha Pago</th>
+                                        <th className="px-3 py-3">Saldo Inicial</th>
+                                        <th className="px-3 py-3">Interés</th>
+                                        <th className="px-3 py-3">Amortización</th>
+                                        <th className="px-3 py-3">Seg. Desgrav.</th>
+                                        <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue">Cuota Total</th>
+                                        <th className="px-3 py-3">Saldo Final</th>
+                                    </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50 text-[9px] font-bold text-gray-700">
-                                        {result.detalles.map((d, index) => {
-                                            const gracia = d.plazo_gracia || d.tipo_gracia || '';
-                                            const esParcial = gracia.toLowerCase().includes('parcial');
-                                            const esTotal = gracia.toLowerCase().includes('total');
-                                            const rowClass = d.numero_cuota === 0
-                                                ? 'bg-gray-50/50 italic opacity-60 text-gray-400'
-                                                : esParcial
-                                                    ? 'bg-amber-50/80'
-                                                    : esTotal
-                                                        ? 'bg-red-50/60'
-                                                        : '';
+                                    {result.detalles.map((d, index) => {
+                                        const gracia = d.plazo_gracia || d.tipo_gracia || '';
+                                        const esParcial = gracia.toLowerCase().includes('parcial');
+                                        const esTotal = gracia.toLowerCase().includes('total');
+                                        const rowClass = d.numero_cuota === 0
+                                            ? 'bg-gray-50/50 italic opacity-60 text-gray-400'
+                                            : esParcial
+                                                ? 'bg-amber-50/80'
+                                                : esTotal
+                                                    ? 'bg-red-50/60'
+                                                    : '';
 
-                                            return (
-                                                <tr key={index} className={`border-b border-gray-50 hover:bg-brand-blue/[0.02] transition-colors ${rowClass}`}>
-                                                    <td className="px-2 py-2.5 font-black text-brand-blue">
-                                                        <div className="flex items-center gap-2">
-                                                            {d.numero_cuota > 0 && esParcial && <div className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Gracia Parcial"></div>}
-                                                            {d.numero_cuota > 0 && esTotal && <div className="w-1.5 h-1.5 rounded-full bg-red-500" title="Gracia Total"></div>}
-                                                            #{d.numero_cuota}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-2 py-2.5 text-center text-gray-500">{new Date(d.fecha_vencimiento).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-600 font-bold">S/ {parseFloat(d.saldo_inicial || d.saldo_inicio || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 font-black text-brand-blue bg-brand-blue/[0.01]">
-                                                        <div className="flex flex-col">
-                                                            <span>S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                                            {d.numero_cuota > 0 && (esParcial || esTotal) && (
-                                                                <span className={`text-[7px] font-black uppercase tracking-tighter ${esTotal ? 'text-red-500' : 'text-amber-600'}`}>
+                                        return (
+                                            <tr key={index} className={`border-b border-gray-50 hover:bg-brand-blue/[0.02] transition-colors ${rowClass}`}>
+                                                <td className="px-2 py-2.5 font-black text-brand-blue">
+                                                    <div className="flex items-center gap-2">
+                                                        {d.numero_cuota > 0 && esParcial && <div className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Gracia Parcial"></div>}
+                                                        {d.numero_cuota > 0 && esTotal && <div className="w-1.5 h-1.5 rounded-full bg-red-500" title="Gracia Total"></div>}
+                                                        #{d.numero_cuota}
+                                                    </div>
+                                                </td>
+                                                <td className="px-2 py-2.5 text-center text-gray-500">{new Date(d.fecha_vencimiento).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+                                                <td className="px-3 py-2.5 text-gray-600 font-bold">S/ {parseFloat(d.saldo_inicial || d.saldo_inicio || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td className="px-3 py-2.5 font-black text-brand-blue bg-brand-blue/[0.01]">
+                                                    <div className="flex flex-col">
+                                                        <span>S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                        {d.numero_cuota > 0 && (esParcial || esTotal) && (
+                                                            <span className={`text-[7px] font-black uppercase tracking-tighter ${esTotal ? 'text-red-500' : 'text-amber-600'}`}>
                                                                     Gracia {esTotal ? 'Total' : 'Parcial'}
                                                                 </span>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-3 py-2.5 text-gray-900 font-black">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                </tr>
-                                            );
-                                        })}
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-3 py-2.5 text-gray-900 font-black">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            </tr>
+                                        );
+                                    })}
                                     </tbody></table></div>
                             </div>
                         </div>

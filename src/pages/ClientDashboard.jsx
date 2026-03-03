@@ -6,7 +6,7 @@ import CalculateIcon from '@mui/icons-material/Calculate';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import DownloadIcon from '@mui/icons-material/Download';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf'; // 🚨 NUEVO ICONO PARA PDF
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { useAuth } from '../context/AuthContext';
 import { getMySimulations, exportToExcel, exportToPDF } from '../services/simulationService';
 import { useNavigate, Link } from 'react-router-dom';
@@ -94,7 +94,7 @@ const ClientDashboard = () => {
                 <header className="mb-8 flex justify-between items-end">
                     <div>
                         <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-                            ¡Bienvenido, {user?.nombres || 'Cliente'}! 👋
+                            ¡Bienvenido, {user?.nombres || 'Cliente'}! 
                         </h1>
                         <p className="text-gray-500 text-sm font-medium">Gestiona tus simulaciones de crédito hipotecario.</p>
                     </div>
