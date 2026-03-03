@@ -37,6 +37,7 @@ const ClientDashboard = () => {
     useEffect(() => {
         const fetchSimulations = async () => {
             try {
+                setLoading(true);
                 const result = await getMySimulations();
                 if (result.success) {
                     setSimulations(result.data);
@@ -51,12 +52,17 @@ const ClientDashboard = () => {
             }
         };
         fetchSimulations();
+
+        // Refrescar lista cuando el usuario vuelve al dashboard (ej: desde Simulador)
+        const handleFocus = () => fetchSimulations();
+        window.addEventListener('focus', handleFocus);
+        return () => window.removeEventListener('focus', handleFocus);
     }, []);
 
     // Calcular KPIs
     const totalSimulations = simulations.length;
     const avgFinanced = totalSimulations > 0
-        ? simulations.reduce((acc, sim) => acc + (sim.monto_financiamiento || 0), 0) / totalSimulations
+        ? simulations.reduce((acc, sim) => acc + (sim.monto_financiamiento || sim.resumen?.monto_financiar || 0), 0) / totalSimulations
         : 0;
 
     const stats = [
@@ -197,9 +203,9 @@ const ClientDashboard = () => {
                                         {simulations.map((sim) => (
                                             <tr key={sim.codigo_simulacion} className="hover:bg-gray-50 transition-colors">
                                                 <td className="px-6 py-4 text-sm font-bold text-gray-900">#{sim.codigo_simulacion}</td>
-                                                <td className="px-6 py-4 text-sm text-gray-600">{sim.direccion_unidad || 'N/A'}</td>
-                                                <td className="px-6 py-4 text-sm font-bold text-brand-blue">{formatCurrency(sim.monto_financiamiento || 0)}</td>
-                                                <td className="px-6 py-4 text-sm font-bold text-brand-orange">{formatCurrency(sim.cuota_mensual || 0)}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-600">{sim.direccion_unidad ? `${sim.distrito_unidad ? sim.distrito_unidad + ' - ' : ''}${sim.direccion_unidad}` : `Unidad #${sim.codigo_unidad}`}</td>
+                                                <td className="px-6 py-4 text-sm font-bold text-brand-blue">{formatCurrency(sim.monto_financiamiento || sim.resumen?.monto_financiar || 0)}</td>
+                                                <td className="px-6 py-4 text-sm font-bold text-brand-orange">{formatCurrency(sim.cuota_mensual || sim.resumen?.cuota_base || 0)}</td>
                                                 <td className="px-6 py-4 text-sm text-gray-600">{sim.plazo_meses} meses</td>
                                                 <td className="px-6 py-4 text-sm text-gray-500">{formatDate(sim.fecha_simulacion)}</td>
                                                 <td className="px-6 py-4">

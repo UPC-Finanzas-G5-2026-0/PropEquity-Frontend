@@ -1,8 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
+import api from '../services/api';
 import Sidebar from '../components/Sidebar';
 import { getUnits } from '../services/unitService';
 import { createSimulation, exportToExcel, exportToPDF } from '../services/simulationService';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate, useParams } from 'react-router-dom';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
@@ -16,12 +19,114 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CustomSelect from '../components/CustomSelect';
 
 const SimulationPage = () => {
+    const navigate = useNavigate();
+    const { id } = useParams(); // ID de simulación guardada (modo vista)
+
+    const [formData, setFormData] = useState({
+        codigo_unidad: '',
+        cuota_inicial: '10',
+        gastos_tasacion: '0.00',
+        gastos_notariales: '0.00',
+        gastos_estudio_titulos: '0.00',
+        comision_estudio: '0.00',
+        comision_activacion: '0.00',
+        bono_bbp: '0',
+        sin_bono: true,
+        es_integrador: false,
+        categoria_integrador: 'Menores ingresos',
+        vivienda_sostenible: false,
+        ifi_seleccionada: '',
+        codigo_tipo_tasa: '2',
+        tasa_anual: '10',
+        capitalizacion: 'Mensual',
+        plazo_meses: '240',
+        codigo_tipo_gracia: '1',
+        meses_gracia: '0',
+        seguro_desgravamen: '0.039',
+        tipo_cambio: '3.80',
+        ha_recibido_apoyo: false,
+        tiene_credito_activo: false,
+        fecha_inicio_prestamo: new Date().toISOString().split('T')[0]
+    });
+
+    const [temValue, setTemValue] = useState('--');
+    // Consultar TEM desde backend cada vez que cambia la tasa anual
+    useEffect(() => {
+        const fetchTEM = async () => {
+            if (!formData.tasa_anual) {
+                setTemValue('--');
+                return;
+            }
+            try {
+                const response = await api.get(`/simulator/tem?tea=${formData.tasa_anual}`);
+                if (response.data && typeof response.data.tem !== 'undefined') {
+                    setTemValue(`${parseFloat(response.data.tem).toFixed(4)}%`);
+                } else {
+                    setTemValue('--');
+                }
+            } catch {
+                setTemValue('--');
+            }
+        };
+        fetchTEM();
+    }, [formData.tasa_anual]);
+    // Guardar simulación — llama al backend con save=true para persistir en BD
+    const handleSaveSimulation = async () => {
+        if (!result || !lastPayload) {
+            alert('Genera una proyección primero antes de guardar.');
+            return;
+        }
+        setSaving(true);
+        try {
+            const response = await createSimulation(lastPayload, true); // save=true → persiste en BD
+            if (response.success) {
+                const codigo = response.data?.codigo_simulacion;
+                alert(`✅ Simulación #${codigo} guardada correctamente.`);
+                navigate('/cliente/dashboard');
+            } else {
+                alert(`Error al guardar: ${response.error}`);
+            }
+        } finally {
+            setSaving(false);
+        }
+    };
     const { user } = useAuth();
     const [units, setUnits] = useState([]);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
+    const [cuotaMoneda, setCuotaMoneda] = useState('S/');
     const [serverError, setServerError] = useState(null);
     const [cuotaType, setCuotaType] = useState('porcentaje');
+    const [lastPayload, setLastPayload] = useState(null); // Payload del último cálculo
+    const [saving, setSaving] = useState(false); // Estado del botón guardar
+
+    // Cargar simulación guardada si hay un ID en la URL (modo solo lectura)
+    // Si no hay ID, limpiar el resultado para empezar desde cero
+    useEffect(() => {
+        if (!id) {
+            setResult(null);
+            setServerError(null);
+            setLastPayload(null);
+            return;
+        }
+        const loadSavedSimulation = async () => {
+            setLoading(true);
+            try {
+                const response = await api.get(`/simulator/${id}`);
+                const data = response.data;
+                // Normalizar detalles para que el componente de tabla los entienda
+                if (data.detalles && !data.cronograma) {
+                    data.cronograma = data.detalles;
+                }
+                setResult(data);
+            } catch (err) {
+                setServerError({ titulo: 'Error', mensaje: 'No se pudo cargar la simulación guardada.' });
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadSavedSimulation();
+    }, [id]);
 
     // Función para obtener título según el tipo de error del backend
     const getErrorTitle = (errorMsg) => {
@@ -48,31 +153,7 @@ const SimulationPage = () => {
         return 'Error de validación';
     };
 
-    const [formData, setFormData] = useState({
-        codigo_unidad: '',
-        cuota_inicial: '10',
-        gastos_tasacion: '250',
-        gastos_notariales: '1200',
-        gastos_estudio_titulos: '300',
-        comision_ifi: '0',
-        bono_bbp: '0',
-        sin_bono: true,
-        es_integrador: false,
-        categoria_integrador: 'Menores ingresos',
-        vivienda_sostenible: false,
-        ifi_seleccionada: '',
-        codigo_tipo_tasa: '2',
-        tasa_anual: '10',
-        capitalizacion: 'Mensual',
-        plazo_meses: '240',
-        codigo_tipo_gracia: '1',
-        meses_gracia: '0',
-        seguro_desgravamen: '0.039',
-        tipo_cambio: '3.80',
-        ha_recibido_apoyo: false,
-        tiene_credito_activo: false,
-        fecha_inicio_prestamo: new Date().toISOString().split('T')[0]
-    });
+
 
     const selectedUnit = units.find(u => String(u.codigo_unidad) === formData.codigo_unidad);
 
@@ -180,14 +261,14 @@ const SimulationPage = () => {
             );
             setFormData(prev => ({ ...prev, bono_bbp: bono }));
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedUnit, formData.vivienda_sostenible, formData.es_integrador, formData.categoria_integrador, formData.sin_bono, formData.ha_recibido_apoyo, formData.tiene_credito_activo, formData.tipo_cambio, user?.ingreso_mensual]);
 
     useEffect(() => {
         if (formData.ifi_seleccionada && formData.codigo_tipo_tasa === '1') {
             setFormData(prev => ({ ...prev, codigo_tipo_tasa: '2' }));
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [formData.ifi_seleccionada]);
 
     useEffect(() => {
@@ -212,14 +293,37 @@ const SimulationPage = () => {
     }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp]);
 
     const handleSimulate = async () => {
+
+        // Validar que codigo_unidad sea un entero válido
+        const codigoUnidadInt = parseInt(formData.codigo_unidad);
+        if (isNaN(codigoUnidadInt) || !formData.codigo_unidad) {
+            setServerError({
+                titulo: 'Unidad no seleccionada',
+                mensaje: 'Por favor selecciona una unidad válida antes de simular.'
+            });
+            return;
+        }
+
+        // Validar selección de entidad si modalidad es Tradicional o Integrador
+        const bonoTradicional = !formData.sin_bono && !formData.vivienda_sostenible && !formData.es_integrador;
+        const bonoIntegrador = formData.es_integrador;
+        if ((bonoTradicional || bonoIntegrador) && !formData.ifi_seleccionada) {
+            setServerError({
+                titulo: 'Entidad requerida',
+                mensaje: 'Debe seleccionar una entidad financiera (IFI) para continuar con modalidad Tradicional o Integrador.'
+            });
+            return;
+        }
+
         const val = parseFloat(formData.cuota_inicial);
         const plazo = parseInt(formData.plazo_meses);
         const precio = selectedUnit?.precio_venta || 0;
         let finalCuotaInicial = cuotaType === 'porcentaje' ? (val / 100) * precio : val;
-        const totalGastosCierre = parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_ifi || 0);
+        const totalGastosIniciales = parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_estudio || 0) + parseFloat(formData.comision_activacion || 0);
 
         // El backend realiza todas las validaciones
         setLoading(true);
+        setResult(null); // Limpiar resultado anterior para visualización de "fresco"
         setServerError(null);
         try {
             const TIPO_TASA_MAP = { '1': 'Nominal', '2': 'Efectiva' };
@@ -232,7 +336,14 @@ const SimulationPage = () => {
             const payload = {
                 codigo_unidad: parseInt(formData.codigo_unidad),
                 cuota_inicial: parseFloat(finalCuotaInicial),
-                gastos_cierre: totalGastosCierre,
+                // Gastos desglosados para el backend
+                tasacion: parseFloat(formData.gastos_tasacion || 0),
+                coste_notarial: parseFloat(formData.gastos_notariales || 0),
+                coste_registral: parseFloat(formData.gastos_estudio_titulos || 0),
+                comision_estudio: parseFloat(formData.comision_estudio || 0),
+                comision_activacion: parseFloat(formData.comision_activacion || 0),
+                gastos_iniciales: totalGastosIniciales,
+
                 tipo_bbp: tipoBbp,
                 categoria_integrador: formData.es_integrador ? formData.categoria_integrador : null,
                 ifi_seleccionada: formData.ifi_seleccionada || null,
@@ -250,9 +361,40 @@ const SimulationPage = () => {
                 codigo_asesor: user?.role === 'Asesor' ? user.id : null,
                 fecha_inicio_prestamo: formData.fecha_inicio_prestamo
             };
-            const response = await createSimulation(payload);
+            setLastPayload(payload); // Guardar payload para usar en 'Guardar Simulación'
+            const response = await createSimulation(payload, false); // save=false = preview
             if (response.success) {
-                setResult(response.data);
+                const data = response.data;
+                // Normalizar: el backend devuelve "cronograma" con campos distintos
+                // El frontend espera "detalles" con campos: cuota_total, saldo_inicio, fecha_vencimiento, etc.
+                if (data.cronograma && !data.detalles) {
+                    data.detalles = data.cronograma.map(c => ({
+                        numero_cuota: c.numero_cuota,
+                        fecha_vencimiento: c.fecha_pago,
+                        fecha_pago: c.fecha_pago,
+                        tea: c.tea,
+                        tem: c.tem,
+                        plazo_gracia: c.plazo_gracia,
+                        saldo_inicio: c.saldo_inicial,
+                        saldo_inicial: c.saldo_inicial,
+                        interes: c.interes,
+                        amortizacion: c.amortizacion,
+                        seguro: c.seguro_desgravamen,
+                        seguro_desgravamen: c.seguro_desgravamen,
+                        cuota_total: c.cuota,
+                        cuota: c.cuota,
+                        saldo_final: c.saldo_final
+                    }));
+                }
+                // Normalizar resumen al nivel superior para las tarjetas de stats
+                if (data.resumen) {
+                    data.tea = data.resumen.tasa_efectiva_anual / 100;
+                    data.tem = data.resumen.tasa_efectiva_mensual / 100;
+                    data.tcea = data.resumen.tcea / 100;
+                    data.van = data.resumen.van;
+                    data.tir = data.resumen.tir;
+                }
+                setResult(data);
                 setServerError(null);
                 setTimeout(() => { document.getElementById('simulation-result')?.scrollIntoView({ behavior: 'smooth' }); }, 100);
             } else {
@@ -276,20 +418,18 @@ const SimulationPage = () => {
 
     useEffect(() => {
         if (selectedUnit) {
-            setFormData(prev => ({ ...prev, vivienda_sostenible: selectedUnit.es_sostenible || false, es_integrador: false, sin_bono: true }));
+            setFormData(prev => ({ ...prev, vivienda_sostenible: selectedUnit.es_sostenible || false }));
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedUnit]);
 
     return (
         <div className="flex bg-[#F8FAFC] min-h-screen font-['Inter',_sans-serif]">
             <Sidebar />
             <main className="flex-1 p-4 overflow-y-auto bg-gray-50/50">
-                <header className="mb-3 flex justify-between items-center bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
-                    <div>
-                        <h1 className="text-xl font-black text-gray-900 tracking-tighter leading-none">Simulador PropEquity</h1>
-                        <p className="text-gray-400 text-[9px] font-bold mt-0.5 uppercase tracking-[0.2em]">Crédito MiVivienda 2026</p>
-                    </div>
+                <header className="mb-6">
+                    <h1 className="text-2xl font-black text-gray-900 mb-1 tracking-tight">Simulador PropEquity</h1>
+                    <p className="text-gray-500 text-sm font-medium uppercase tracking-wider">Crédito MiVivienda 2026</p>
                 </header>
 
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start mb-6">
@@ -297,7 +437,7 @@ const SimulationPage = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             {/* Inmueble */}
                             <div className="space-y-3">
-                                <h3 className="text-[10px] font-black text-brand-blue uppercase tracking-widest border-b border-gray-50 pb-2 mb-1">Inmueble</h3>
+                                <h3 className="text-[10px] font-black text-brand-blue uppercase tracking-widest border-b border-gray-50 pb-2 mb-1">Propiedades</h3>
                                 <CustomSelect label="Unidad" value={formData.codigo_unidad} showInfo={true} onChange={(val) => handleCustomChange('codigo_unidad', val)} options={units.map(u => ({ id: u.codigo_unidad, label: `${u.distrito_unidad} - ${u.direccion_unidad}` }))} />
 
                                 {/* Info del inmueble seleccionado */}
@@ -344,8 +484,8 @@ const SimulationPage = () => {
                                     <div className="flex justify-between items-center mb-1 ml-1">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Inicial</label>
                                         <div className="flex bg-gray-50 p-0.5 rounded-lg border border-gray-100">
-                                            <button onClick={() => setCuotaType('porcentaje')} className={`px-2 py-0.5 rounded-md text-[8px] font-black transition-all ${cuotaType === 'porcentaje' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-300'}`}>%</button>
-                                            <button onClick={() => setCuotaType('monto')} className={`px-2 py-0.5 rounded-md text-[8px] font-black transition-all ${cuotaType === 'monto' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-300'}`}>S/</button>
+                                            <button onClick={() => { setCuotaType('porcentaje'); setResult(null); setServerError(null); }} className={`px-2 py-0.5 rounded-md text-[8px] font-black transition-all ${cuotaType === 'porcentaje' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-300'}`}>%</button>
+                                            <button onClick={() => { setCuotaType('monto'); setResult(null); setServerError(null); }} className={`px-2 py-0.5 rounded-md text-[8px] font-black transition-all ${cuotaType === 'monto' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-300'}`}>S/</button>
                                         </div>
                                     </div>
                                     <input type="number" name="cuota_inicial" value={formData.cuota_inicial} onChange={handleChange} className="w-full bg-transparent border-b border-gray-100 py-1 px-1 focus:outline-none focus:border-brand-blue font-black text-gray-900 text-sm" />
@@ -396,7 +536,7 @@ const SimulationPage = () => {
                                             : [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Tradicional', sinBono: false, sostenible: false, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: false, integrador: true }];
                                         const activeIdx = formData.sin_bono ? 0 : formData.es_integrador ? 2 : 1;
                                         return opciones.map((op, idx) => (
-                                            <button key={op.label} type="button" onClick={() => setFormData(prev => ({ ...prev, sin_bono: op.sinBono, vivienda_sostenible: op.sostenible, es_integrador: op.integrador }))} className={`w-full py-1.5 rounded-lg text-[9px] font-black uppercase text-left px-3 ${activeIdx === idx ? 'bg-brand-blue text-white shadow-md' : 'text-gray-400 hover:bg-gray-100/50'}`}>{op.label}</button>
+                                            <button key={op.label} type="button" onClick={() => { setFormData(prev => ({ ...prev, sin_bono: op.sinBono, vivienda_sostenible: op.sostenible, es_integrador: op.integrador })); setResult(null); setServerError(null); }} className={`w-full py-1.5 rounded-lg text-[9px] font-black uppercase text-left px-3 ${activeIdx === idx ? 'bg-brand-blue text-white shadow-md' : 'text-gray-400 hover:bg-gray-100/50'}`}>{op.label}</button>
                                         ));
                                     })()}
                                 </div>
@@ -411,11 +551,11 @@ const SimulationPage = () => {
                                 <div className="space-y-2 bg-gray-50/50 p-2 rounded-xl border border-gray-100">
                                     <p className="text-[8px] font-black text-gray-400 uppercase text-center mb-1">Elegibilidad FMV</p>
                                     <label className="flex items-center gap-2 cursor-pointer group">
-                                        <input type="checkbox" checked={formData.ha_recibido_apoyo} onChange={(e) => setFormData(prev => ({ ...prev, ha_recibido_apoyo: e.target.checked }))} className="w-3 h-3 rounded text-brand-blue focus:ring-brand-blue transition-all" />
+                                        <input type="checkbox" checked={formData.ha_recibido_apoyo} onChange={(e) => { setFormData(prev => ({ ...prev, ha_recibido_apoyo: e.target.checked })); setResult(null); setServerError(null); }} className="w-3 h-3 rounded text-brand-blue focus:ring-brand-blue transition-all" />
                                         <span className="text-[8px] font-bold text-gray-500 uppercase group-hover:text-brand-blue transition-colors leading-none">¿Ya recibió apoyo estatal?</span>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer group">
-                                        <input type="checkbox" checked={formData.tiene_credito_activo} onChange={(e) => setFormData(prev => ({ ...prev, tiene_credito_activo: e.target.checked }))} className="w-3 h-3 rounded text-brand-blue focus:ring-brand-blue transition-all" />
+                                        <input type="checkbox" checked={formData.tiene_credito_activo} onChange={(e) => { setFormData(prev => ({ ...prev, tiene_credito_activo: e.target.checked })); setResult(null); setServerError(null); }} className="w-3 h-3 rounded text-brand-blue focus:ring-brand-blue transition-all" />
                                         <span className="text-[8px] font-bold text-gray-500 uppercase group-hover:text-brand-blue transition-colors leading-none">¿Tiene crédito FMV activo?</span>
                                     </label>
                                 </div>
@@ -429,10 +569,12 @@ const SimulationPage = () => {
                                     <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Tasa Anual (%)</label>
                                     <input type="number" name="tasa_anual" value={formData.tasa_anual} onChange={handleChange} className="w-full bg-transparent border-b border-gray-100 py-1.5 px-1 focus:outline-none focus:border-brand-blue font-black text-gray-900 text-sm" />
                                 </div>
-                                <CustomSelect label="Tipo de Tasa" value={formData.codigo_tipo_tasa} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_tasa', val)} options={[{ id: '1', label: 'Nominal (TNA)' }, { id: '2', label: 'Efectiva (TEA)' }]} />
+                                <div className={formData.ifi_seleccionada ? 'opacity-50 pointer-events-none' : ''}>
+                                    <CustomSelect label="Tipo de Tasa" value={formData.ifi_seleccionada ? '2' : formData.codigo_tipo_tasa} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_tasa', val)} options={[{ id: '1', label: 'Nominal (TNA)' }, { id: '2', label: 'Efectiva (TEA)' }]} />
+                                </div>
 
-                                {/* Capitalización siempre visible o condicional, pero con mejor spacing */}
-                                <div className={`transition-all duration-300 ${formData.codigo_tipo_tasa === '1' ? 'opacity-100 h-auto mb-2' : 'opacity-40 h-auto pointer-events-none'}`}>
+                                {/* Capitalización: deshabilitada si IFI seleccionada o tasa Efectiva */}
+                                <div className={`transition-all duration-300 ${formData.ifi_seleccionada || formData.codigo_tipo_tasa !== '1' ? 'opacity-30 h-auto pointer-events-none' : 'opacity-100 h-auto mb-2'}`}>
                                     <CustomSelect label="Capitalización" value={formData.capitalizacion} showInfo={true} onChange={(val) => handleCustomChange('capitalizacion', val)} options={[{ id: 'Diaria', label: 'Diaria' }, { id: 'Quincenal', label: 'Quincenal' }, { id: 'Mensual', label: 'Mensual' }, { id: 'Trimestral', label: 'Trimestral' }, { id: 'Semestral', label: 'Semestral' }]} />
                                 </div>
 
@@ -444,28 +586,32 @@ const SimulationPage = () => {
 
                             {/* Detalle Gastos */}
                             <div className="space-y-4">
-                                <h3 className="text-[10px] font-black text-brand-blue uppercase tracking-widest border-b border-gray-50 pb-2 mb-1">Detalle</h3>
+                                <h3 className="text-[10px] font-black text-brand-blue uppercase tracking-widest border-b border-gray-50 pb-2 mb-1">Gastos Iniciales</h3>
                                 <div className="bg-gray-50/20 p-2.5 rounded-xl border border-gray-100 space-y-2">
                                     <div className="grid grid-cols-2 gap-2">
                                         <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Tasación</label><input type="number" name="gastos_tasacion" value={formData.gastos_tasacion} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
-                                        <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">CRI/Títulos</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
-                                        <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Notaría</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
-                                        <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Comis. Banco</label><input type="number" name="comision_ifi" value={formData.comision_ifi} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
+                                        <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Costes Registrales</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
+                                        <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Costes Notariales</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
+                                        <div><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Comisión de estudio</label><input type="number" name="comision_estudio" value={formData.comision_estudio} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
+                                        <div className="col-span-2"><label className="block text-[7px] font-black text-gray-400 uppercase mb-0.5">Comisión activación</label><input type="number" name="comision_activacion" value={formData.comision_activacion} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-md py-1 px-1.5 text-[10px] font-bold focus:outline-none focus:border-brand-blue shadow-sm" /></div>
                                     </div>
                                     {/* Indicador % gastos cierre */}
                                     {selectedUnit && (() => {
-                                        const totalGastos = parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_ifi || 0);
+                                        const totalGastos = parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_estudio || 0) + parseFloat(formData.comision_activacion || 0);
                                         const precio = parseFloat(selectedUnit.precio_venta || 0);
                                         const pct = precio > 0 ? (totalGastos / precio) * 100 : 0;
                                         const isValid = pct <= 5;
                                         return (
                                             <div className={`text-[7px] font-semibold px-1 ${isValid ? 'text-green-600' : 'text-red-500'}`}>
-                                                {isValid ? '✓' : '⚠'} Gastos cierre: {pct.toFixed(2)}% del precio (máx. 5%)
+                                                {isValid ? '✓' : '⚠'} Gastos iniciales: {pct.toFixed(2)}% del precio (máx. 5%)
                                             </div>
                                         );
                                     })()}
                                 </div>
                                 <div className="pt-2">
+                                    {((!formData.sin_bono && !formData.vivienda_sostenible && !formData.es_integrador) || formData.es_integrador) && !formData.ifi_seleccionada ? (
+                                        <div className="text-[9px] text-red-500 font-bold mb-2 bg-red-50 p-2 rounded-lg border border-red-100 text-center">Debe seleccionar una entidad financiera (IFI) para continuar.</div>
+                                    ) : null}
                                     <button onClick={handleSimulate} disabled={loading} className="w-full bg-brand-orange hover:bg-orange-600 text-white py-3.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-brand-orange/20 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95">
                                         {loading ? "Calculando..." : <>GENERAR PROYECCIÓN <ArrowForwardIcon sx={{ fontSize: 14 }} /></>}
                                     </button>
@@ -486,7 +632,14 @@ const SimulationPage = () => {
                                 <div className="flex justify-between items-center"><p className="text-[8px] text-gray-400 uppercase font-black">Valor Vivienda</p><p className="text-[11px] font-black">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(selectedUnit?.precio_venta || 0).toLocaleString()}</p></div>
                                 <div className="flex justify-between items-center"><p className="text-[8px] text-gray-400 uppercase font-black">(-) Cuota Inicial</p><p className="text-[11px] font-black text-rose-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => { const p = parseFloat(selectedUnit?.precio_venta || 0); const v = parseFloat(formData.cuota_inicial || 0); return (cuotaType === 'porcentaje' ? (v / 100) * p : v).toLocaleString(); })()}</p></div>
                                 <div className="flex justify-between items-center"><p className="text-[8px] text-gray-400 uppercase font-black">(-) Bono BBP</p><p className="text-[11px] font-black text-emerald-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(formData.bono_bbp).toLocaleString()}</p></div>
-                                <div className="pt-2 border-t border-white/10 flex justify-between items-center"><p className="text-[8px] text-brand-blue-light uppercase font-black">Crédito Neto</p><p className="text-[12px] font-black text-brand-blue-light">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => { const p = parseFloat(selectedUnit?.precio_venta || 0); const b = parseFloat(formData.bono_bbp || 0); const val = parseFloat(formData.cuota_inicial || 0); const ini = cuotaType === 'porcentaje' ? (val / 100) * p : val; return (p - ini - b).toLocaleString(); })()}</p></div>
+                                <div className="pt-2 border-t border-white/10 flex justify-between items-center"><p className="text-[8px] text-brand-blue-light uppercase font-black">Crédito Neto (Préstamo)</p><p className="text-[12px] font-black text-brand-blue-light">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => {
+                                    const p = parseFloat(selectedUnit?.precio_venta || 0);
+                                    const b = parseFloat(formData.bono_bbp || 0);
+                                    const val = parseFloat(formData.cuota_inicial || 0);
+                                    const ini = cuotaType === 'porcentaje' ? (val / 100) * p : val;
+                                    const g = parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_estudio || 0) + parseFloat(formData.comision_activacion || 0);
+                                    return (p - ini - b + g).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                })()}</p></div>
 
                                 <div className="flex justify-between items-center pt-1"><p className="text-[8px] text-gray-400 uppercase font-black">Ingreso Familiar (IFM)</p><p className="text-[11px] font-black text-white">S/ {(parseFloat(user?.ingreso_mensual || 0) + parseFloat(user?.ingreso_conyuge || 0)).toLocaleString()}</p></div>
                                 {parseFloat(user?.ingreso_conyuge || 0) > 0 && (
@@ -495,48 +648,23 @@ const SimulationPage = () => {
                             </div>
 
                             <div className="bg-white/5 p-3 rounded-xl border border-white/10 space-y-1.5">
-                                <div className="flex justify-between text-[9px] font-bold text-gray-300"><span className="uppercase opacity-60">Gastos Operativos</span><span>{selectedUnit?.moneda === 2 ? '$' : 'S/'} {(parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_ifi || 0)).toLocaleString()}</span></div>
+                                <div className="flex justify-between text-[9px] font-bold text-gray-300"><span className="uppercase opacity-60">Gastos Operativos</span><span>{selectedUnit?.moneda === 2 ? '$' : 'S/'} {(parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_estudio || 0) + parseFloat(formData.comision_activacion || 0)).toLocaleString()}</span></div>
                                 <div className="flex justify-between text-[9px] font-bold text-gray-300">
                                     <span className="uppercase opacity-60">Tasa Mensual (TEM)</span>
-                                    <span className="text-brand-blue-light">
-                                        {(() => {
-                                            const annualRate = parseFloat(formData.tasa_anual) / 100;
-                                            let tea = annualRate;
-
-                                            if (formData.codigo_tipo_tasa === '1') {
-                                                const m_map = { 'Diaria': 360, 'Quincenal': 24, 'Mensual': 12, 'Trimestral': 4, 'Semestral': 2 };
-                                                const m = m_map[formData.capitalizacion] || 12;
-                                                tea = Math.pow(1 + annualRate / m, m) - 1;
-                                            }
-
-                                            const tem = Math.pow(1 + tea, 1 / 12) - 1;
-                                            return (tem * 100).toFixed(4) + '%';
-                                        })()}
-                                    </span>
+                                    <span className="text-brand-blue-light">{temValue}</span>
                                 </div>
                             </div>
 
-                            <div className="bg-brand-blue/20 p-5 rounded-xl border border-brand-blue/30 text-center relative overflow-hidden shadow-inner">
-                                <AccountBalanceIcon className="absolute -right-3 -bottom-3 opacity-10 text-brand-blue-light" sx={{ fontSize: 80 }} />
-                                <p className="text-[9px] font-black text-brand-blue-light uppercase mb-1.5 tracking-[0.2em] relative z-10">
-                                    Cuota Mensual
-                                </p>
-                                {result ? (
-                                    <>
-                                        <p className="text-3xl font-black text-white relative z-10 drop-shadow-md">
-                                            {result.codigo_moneda === 1 ? 'S/' : '$'} {parseFloat(result.detalles[1]?.cuota_total || result.detalles[0]?.cuota_total).toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                                        </p>
-                                        <p className="text-[8px] text-emerald-400 font-bold uppercase mt-2 relative z-10 tracking-widest">✓ Calculado por el sistema</p>
-                                    </>
-                                ) : (
-                                    <>
-                                        <p className="text-2xl font-black text-gray-400 relative z-10">
-                                            --
-                                        </p>
-                                        <p className="text-[8px] text-gray-500 font-bold uppercase mt-2 relative z-10 tracking-widest">Generar simulación para ver</p>
-                                    </>
-                                )}
-                            </div>
+                            {/* Botón Guardar Simulación */}
+                            {result && (
+                                <button
+                                    onClick={handleSaveSimulation}
+                                    disabled={saving}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-700 active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-[0.15em] shadow-lg transition-all flex items-center justify-center gap-2"
+                                >
+                                    {saving ? 'Guardando...' : 'Guardar Simulación'}
+                                </button>
+                            )}
 
                             {/* Mensaje de error del backend */}
                             <div className="space-y-2 mt-4">
@@ -574,7 +702,7 @@ const SimulationPage = () => {
                     <div id="simulation-result" className="animate-in fade-in slide-in-from-bottom-5 duration-700">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                             {[
-                                { label: 'Cuota Total', value: `${result.codigo_moneda === 1 ? 'S/' : '$'} ${result.detalles[1]?.cuota_total || result.detalles[0]?.cuota_total}`, icon: <PaymentsIcon sx={{ fontSize: 18 }} /> },
+                                { label: 'Cuota Total', value: `${selectedUnit?.moneda === 2 ? '$' : 'S/'} ${(result.detalles[1]?.cuota_total || result.detalles[0]?.cuota_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <PaymentsIcon sx={{ fontSize: 18 }} /> },
                                 { label: 'Plazo', value: `${result.detalles.length} Meses`, icon: <CalendarMonthIcon sx={{ fontSize: 18 }} /> },
                                 { label: 'TCEA Estimada', value: `${(result.tcea * 100).toFixed(2)}%`, icon: <QueryStatsIcon sx={{ fontSize: 18 }} /> },
                                 { label: 'TEA Banco', value: `${(result.tea * 100).toFixed(2)}%`, icon: <ShowChartIcon sx={{ fontSize: 18 }} /> }
@@ -586,21 +714,84 @@ const SimulationPage = () => {
                             ))}
                         </div>
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="p-4 border-b border-gray-50 flex justify-between items-center"><h3 className="text-xs font-black text-gray-900 uppercase tracking-tighter">Cronograma de Pagos</h3><div className="flex gap-2"><button onClick={() => exportToExcel(result.codigo_simulacion)} className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-black text-[8px] uppercase hover:bg-green-100">Excel</button><button onClick={() => exportToPDF(result.codigo_simulacion)} className="px-3 py-1.5 bg-red-50 text-red-700 rounded-lg font-black text-[8px] uppercase hover:bg-red-100">PDF</button></div></div>
+                            <div className="p-4 border-b border-gray-50 flex justify-between items-center"><h3 className="text-xs font-black text-gray-900 uppercase tracking-tighter">Cronograma de Pagos</h3><div className="flex gap-2">
+                                <button
+                                    onClick={async () => {
+                                        let codigoSim = result.codigo_simulacion;
+                                        if (!codigoSim && lastPayload) {
+                                            const saved = await createSimulation(lastPayload, true);
+                                            if (saved.success) {
+                                                codigoSim = saved.data?.codigo_simulacion;
+                                                setResult(prev => ({ ...prev, codigo_simulacion: codigoSim }));
+                                            } else { alert('Guarda la simulación primero para exportar.'); return; }
+                                        }
+                                        if (!codigoSim) { alert('Guarda la simulación primero para exportar.'); return; }
+                                        const r = await exportToExcel(codigoSim);
+                                        if (!r.success) alert(r.error);
+                                    }}
+                                    className="px-3 py-1.5 bg-green-50 text-green-700 rounded-lg font-black text-[8px] uppercase hover:bg-green-100"
+                                >Excel</button>
+                                <button
+                                    onClick={async () => {
+                                        let codigoSim = result.codigo_simulacion;
+                                        if (!codigoSim && lastPayload) {
+                                            const saved = await createSimulation(lastPayload, true);
+                                            if (saved.success) {
+                                                codigoSim = saved.data?.codigo_simulacion;
+                                                setResult(prev => ({ ...prev, codigo_simulacion: codigoSim }));
+                                            } else { alert('Guarda la simulación primero para exportar.'); return; }
+                                        }
+                                        if (!codigoSim) { alert('Guarda la simulación primero para exportar.'); return; }
+                                        const r = await exportToPDF(codigoSim);
+                                        if (!r.success) alert(r.error);
+                                    }}
+                                    className="px-3 py-1.5 bg-red-50 text-red-700 rounded-lg font-black text-[8px] uppercase hover:bg-red-100"
+                                >PDF</button>
+                            </div></div>
                             <div className="overflow-x-auto"><table className="w-full text-left"><thead><tr className="bg-gray-50/30 text-[7px] font-black text-gray-400 uppercase">
-                                <th className="px-5 py-2.5 border-b border-gray-100">N° Cuota</th><th className="px-5 py-2.5 border-b border-gray-100 text-center">Vencimiento</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Saldo Inicial</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Amortización</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Interés</th><th className="px-5 py-2.5 border-b border-gray-100 text-right bg-brand-blue/5 text-brand-blue">Cuota Total</th><th className="px-5 py-2.5 border-b border-gray-100 text-right">Saldo Final</th>
+                                <th className="px-3 py-2.5 border-b border-gray-100">N°</th>
+                                <th className="px-3 py-2.5 border-b border-gray-100 text-center">Fecha Pago</th>
+                                <th className="px-3 py-2.5 border-b border-gray-100 text-right">TEA%</th>
+                                <th className="px-3 py-2.5 border-b border-gray-100 text-right">TEM%</th>
+                                <th className="px-3 py-2.5 border-b border-gray-100 text-center">Plazo Gracia</th>
+                                <th className="px-3 py-2.5 border-b border-gray-100 text-right">Saldo Inicial</th>
+                                <th className="px-3 py-2.5 border-b border-gray-100 text-right">Interés</th>
+                                <th className="px-3 py-2.5 border-b border-gray-100 text-right">Amortización</th>
+                                <th className="px-3 py-2.5 border-b border-gray-100 text-right">Seg. Desgrav.</th>
+                                <th className="px-3 py-2.5 border-b border-gray-100 text-right bg-brand-blue/5 text-brand-blue">Cuota</th>
+                                <th className="px-3 py-2.5 border-b border-gray-100 text-right">Saldo Final</th>
                             </tr></thead><tbody className="divide-y divide-gray-50 text-[9px] font-bold text-gray-700">
-                                    {result.detalles.map((cuota) => (
-                                        <tr key={cuota.numero_cuota} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-5 py-2.5">#{cuota.numero_cuota}</td>
-                                            <td className="px-5 py-2.5 text-center text-gray-400">{cuota.fecha_vencimiento}</td>
-                                            <td className="px-5 py-2.5 text-right">S/ {cuota.saldo_inicio?.toLocaleString()}</td>
-                                            <td className="px-5 py-2.5 text-right">S/ {cuota.amortizacion.toLocaleString()}</td>
-                                            <td className="px-5 py-2.5 text-right">S/ {cuota.interes.toLocaleString()}</td>
-                                            <td className="px-5 py-2.5 text-right font-black text-brand-blue bg-brand-blue/[0.01]">S/ {cuota.cuota_total.toLocaleString()}</td>
-                                            <td className="px-5 py-2.5 text-right">S/ {cuota.saldo_final?.toLocaleString()}</td>
-                                        </tr>
-                                    ))}
+                                    {result.detalles.map((cuota) => {
+                                        const gracia = cuota.plazo_gracia || cuota.tipo_gracia || '';
+                                        const esParcial = gracia.toLowerCase().includes('parcial');
+                                        const esTotal = gracia.toLowerCase().includes('total');
+                                        const rowClass = cuota.numero_cuota === 0
+                                            ? 'bg-blue-50/40 text-gray-400'
+                                            : esParcial
+                                                ? 'bg-amber-50 border-l-2 border-amber-400'
+                                                : esTotal
+                                                    ? 'bg-orange-50 border-l-2 border-orange-500'
+                                                    : '';
+                                        return (
+                                            <tr key={cuota.numero_cuota} className={`hover:brightness-95 transition-all ${rowClass}`}>
+                                                <td className="px-3 py-2.5">#{cuota.numero_cuota}</td>
+                                                <td className="px-3 py-2.5 text-center text-gray-400">{cuota.fecha_vencimiento || cuota.fecha_pago || '--'}</td>
+                                                <td className="px-3 py-2.5 text-right">{cuota.numero_cuota === 0 ? '-' : (cuota.tea != null ? `${parseFloat(cuota.tea).toFixed(2)}%` : '--')}</td>
+                                                <td className="px-3 py-2.5 text-right">{cuota.numero_cuota === 0 ? '-' : (cuota.tem != null ? `${parseFloat(cuota.tem).toFixed(4)}%` : '--')}</td>
+                                                <td className={`px-3 py-2.5 text-center font-black ${esParcial ? 'text-amber-600' : esTotal ? 'text-orange-600' : ''}`}>
+                                                    {cuota.numero_cuota === 0 ? '-' : (
+                                                        esParcial ? 'Parcial' : esTotal ? 'Total' : (gracia || 'Sin Gracia')
+                                                    )}
+                                                </td>
+                                                <td className="px-3 py-2.5 text-right">S/ {cuota.saldo_inicio?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td className="px-3 py-2.5 text-right">{cuota.numero_cuota === 0 ? '-' : `S/ ${cuota.interes?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
+                                                <td className="px-3 py-2.5 text-right">{cuota.numero_cuota === 0 ? '-' : `S/ ${cuota.amortizacion?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
+                                                <td className="px-3 py-2.5 text-right">{cuota.numero_cuota === 0 ? '-' : `S/ ${cuota.seguro_desgravamen?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}`}</td>
+                                                <td className="px-3 py-2.5 text-right text-brand-blue bg-brand-blue/[0.01]">{cuota.numero_cuota === 0 ? '-' : `S/ ${cuota.cuota_total?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</td>
+                                                <td className="px-3 py-2.5 text-right">S/ {cuota.saldo_final?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody></table></div>
                         </div>
                     </div>
