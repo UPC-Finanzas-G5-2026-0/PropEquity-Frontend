@@ -7,7 +7,7 @@ import { getUnits, toggleUnitFavorite } from '../services/unitService';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
-// 🚨 NUEVA FUNCIÓN: Procesador inteligente de URLs de imágenes
+// NUEVA FUNCIÓN: Procesador inteligente de URLs de imágenes
 const getImageUrl = (fotoPath) => {
   if (!fotoPath) return null;
   // Si ya es una URL completa (Cloudinary o externo), pasa directo
@@ -16,7 +16,7 @@ const getImageUrl = (fotoPath) => {
   if (fotoPath.startsWith('/')) return fotoPath;
 
   // URL de tu backend en Render para fotos antiguas subidas localmente (opcional)
-  return `https://tu-backend.onrender.com${fotoPath}`;
+  return `https://propequity-backend.onrender.com${fotoPath}`;
 };
 
 const PropertyCatalogPage = () => {
@@ -81,7 +81,7 @@ const PropertyCatalogPage = () => {
               <div key={prop.codigo_unidad} className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-gray-100 hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 group flex flex-col">
                 <div className="h-56 bg-gray-100 relative overflow-hidden shrink-0">
 
-                  {/* 🚨 CAMBIO APLICADO AQUÍ: Uso de getImageUrl */}
+                  {/* CAMBIO APLICADO AQUÍ: Uso de getImageUrl */}
                   {getImageUrl(prop.foto) ? (
                     <img
                       src={getImageUrl(prop.foto)}

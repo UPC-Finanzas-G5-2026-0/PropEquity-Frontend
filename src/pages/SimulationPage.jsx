@@ -104,6 +104,8 @@ const SimulationPage = () => {
     const [cuotaType, setCuotaType] = useState('porcentaje');
     const [lastPayload, setLastPayload] = useState(null); // Payload del último cálculo
     const [saving, setSaving] = useState(false); // Estado del botón guardar
+    const [prospectStatus, setProspectStatus] = useState('');
+    const [prospectIFM, setProspectIFM] = useState(0);
 
     // Cargar simulación guardada si hay un ID en la URL (modo solo lectura)
     // Si no hay ID, limpiar el resultado para empezar desde cero
@@ -193,7 +195,7 @@ const SimulationPage = () => {
 
     const fetchUnits = async () => {
         try {
-            // 🚨 CAMBIO PEDIDO: Solo mis unidades y favoritos
+            // CAMBIO PEDIDO: Solo mis unidades y favoritos
             const response = await getUnits(0, 100, false, true);
             if (response.success) {
                 let finalUnits = [...response.data];
@@ -242,7 +244,7 @@ const SimulationPage = () => {
                 try {
                     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
 
-                    //  REEMPLAZA ESTO POR LA URL REAL DE TU BACKEND EN RENDER 🚨
+                    //  REEMPLAZA ESTO POR LA URL REAL DE TU BACKEND EN RENDER
                     const API_URL = 'https://propequity-backend.onrender.com';
 
                     const response = await fetch(`https://propequity-backend.onrender.com/api/v1/simulator/check-income/${formData.codigo_prospecto}`, {
