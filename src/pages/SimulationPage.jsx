@@ -776,8 +776,8 @@ const SimulationPage = () => {
                                 {[
                                     {
                                         label: 'Tasa de Descuento',
-                                        sublabel: 'TCEA anualizada',
-                                        value: `${parseFloat(result.resumen?.tcea || 0).toFixed(4)}%`,
+                                        sublabel: 'COK anual (8% fijo)',
+                                        value: `${parseFloat(result.resumen?.tasa_descuento ?? 8).toFixed(2)}%`,
                                         accent: '#3B82F6'
                                     },
                                     {
