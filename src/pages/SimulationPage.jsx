@@ -136,7 +136,6 @@ const SimulationPage = () => {
     const [saving, setSaving] = useState(false);
     const [prospectStatus, setProspectStatus] = useState('');
     const [prospectIFM, setProspectIFM] = useState(0);
-    // 👇 Estado para saber si el prospecto buscado es mancomunado
     const [isProspectMancomunado, setIsProspectMancomunado] = useState(false);
 
     // Carga de Simulación Guardada
@@ -241,13 +240,11 @@ const SimulationPage = () => {
         setFormData(prev => {
             const newData = { ...prev, [name]: String(value) };
 
-            // Si el usuario cambia a Tasa Nominal, quitamos el Banco y desactivamos el Bono
             if (name === 'codigo_tipo_tasa' && String(value) === '1') {
                 newData.sin_bono = true;
                 newData.ifi_seleccionada = '';
             }
 
-            // Si el usuario elige un Banco, forzamos a Tasa Efectiva
             if (name === 'ifi_seleccionada' && String(value) !== '') {
                 newData.codigo_tipo_tasa = '2'; // Efectiva
                 newData.capitalizacion = 'Mensual';
@@ -275,7 +272,6 @@ const SimulationPage = () => {
                         const data = await response.json();
                         setProspectIFM(data.ifm);
                         setProspectStatus(`✓ Ingresos cargados (${data.type})`);
-                        // Detectamos internamente si el prospecto tiene ingresos mancomunados
                         const typeStr = String(data.type || '').toLowerCase();
                         setIsProspectMancomunado(typeStr.includes('mancomunado') || typeStr.includes('conyuge') || typeStr.includes('casado'));
                     } else {
@@ -357,6 +353,19 @@ const SimulationPage = () => {
     };
 
     useEffect(() => {
+        if (!formData.sin_bono) {
+            if (formData.codigo_tipo_tasa === '1') {
+                setFormData(prev => ({ ...prev, codigo_tipo_tasa: '2' }));
+            }
+        }
+        if (formData.codigo_tipo_tasa === '1') {
+            if (!formData.sin_bono) {
+                setFormData(prev => ({ ...prev, sin_bono: true }));
+            }
+        }
+    }, [formData.sin_bono, formData.codigo_tipo_tasa]);
+
+    useEffect(() => {
         if (selectedUnit) {
             const m = selectedUnit.moneda || selectedUnit.codigo_moneda;
             if (formData.sin_bono || formData.ha_recibido_apoyo || formData.tiene_credito_activo || formData.es_propietario_vivienda) {
@@ -378,7 +387,6 @@ const SimulationPage = () => {
         }
     }, [selectedUnit, bbpData, formData.vivienda_sostenible, formData.es_integrador, formData.categoria_integrador, formData.sin_bono, formData.ha_recibido_apoyo, formData.tiene_credito_activo, formData.es_propietario_vivienda, formData.tipo_cambio, user?.ingreso_mensual]);
 
-    // CÁLCULO INTERNO DE TASA Y SEGURO (MIRA AL USUARIO O AL PROSPECTO)
     useEffect(() => {
         if (!formData.ifi_seleccionada || !selectedUnit) return;
         const p = selectedUnit.precio_venta;
@@ -419,7 +427,6 @@ const SimulationPage = () => {
         if (config) {
             const rule = config.rates.find(r => montoFinanciar <= r.max) || config.rates[config.rates.length - 1];
 
-            // Lógica invisible: Determina si se aplica la tasa mancomunada sin mostrar el dropdown
             const isMancomunado = userRole === 'asesor'
                 ? isProspectMancomunado
                 : (parseFloat(user?.ingreso_conyuge || 0) > 0 || !!user?.nombre_conyuge);
@@ -428,7 +435,7 @@ const SimulationPage = () => {
 
             setFormData(prev => ({
                 ...prev,
-                codigo_tipo_tasa: '2', // Forzamos efectiva si hay banco
+                codigo_tipo_tasa: '2',
                 tasa_anual: rule.tea.toString(),
                 seguro_desgravamen: seguroValue
             }));
@@ -461,11 +468,17 @@ const SimulationPage = () => {
             return;
         }
 
-        const val = parseFloat(formData.cuota_inicial);
-        const plazo = parseInt(formData.plazo_meses);
+        const val = parseFloat(formData.cuota_inicial || 0);
+        const plazo = parseInt(formData.plazo_meses || 240);
         const precio = selectedUnit?.precio_venta || 0;
         let finalCuotaInicial = cuotaType === 'porcentaje' ? (val / 100) * precio : val;
-        const totalGastosIniciales = parseFloat(formData.gastos_tasacion || 0) + parseFloat(formData.gastos_notariales || 0) + parseFloat(formData.gastos_estudio_titulos || 0) + parseFloat(formData.comision_estudio || 0) + parseFloat(formData.comision_activacion || 0);
+
+        // Sumar todos los gastos y comisiones para asegurar que no se envíen vacíos
+        const totalGastosIniciales = parseFloat(formData.gastos_tasacion || 0) +
+            parseFloat(formData.gastos_notariales || 0) +
+            parseFloat(formData.gastos_estudio_titulos || 0) +
+            parseFloat(formData.comision_estudio || 0) +
+            parseFloat(formData.comision_activacion || 0);
 
         setLoading(true);
         setServerError(null);
@@ -490,21 +503,21 @@ const SimulationPage = () => {
                 categoria_integrador: formData.es_integrador ? formData.categoria_integrador : null,
                 ifi_seleccionada: formData.ifi_seleccionada || null,
                 tipo_tasa: TIPO_TASA_MAP[formData.codigo_tipo_tasa] || 'Efectiva',
-                tasa_anual: parseFloat(formData.tasa_anual),
+                tasa_anual: parseFloat(formData.tasa_anual || 0),
                 capitalizacion: formData.capitalizacion,
                 plazo_meses: plazo,
                 tipo_gracia: TIPO_GRACIA_MAP[formData.codigo_tipo_gracia] || 'Ninguno',
-                meses_gracia: parseInt(formData.meses_gracia),
-                seguro_desgravamen: parseFloat(formData.seguro_desgravamen),
+                meses_gracia: parseInt(formData.meses_gracia || 0),
+                seguro_desgravamen: parseFloat(formData.seguro_desgravamen || 0),
                 comision_periodica: parseFloat(formData.comision_periodica || 0),
                 portes: parseFloat(formData.portes || 0),
                 gastos_administracion: parseFloat(formData.gastos_administracion || 0),
-                tipo_cambio: parseFloat(formData.tipo_cambio),
+                tipo_cambio: parseFloat(formData.tipo_cambio || 3.80),
                 ha_recibido_apoyo: formData.ha_recibido_apoyo,
                 tiene_credito_activo: formData.tiene_credito_activo,
                 codigo_cliente: userRole === 'cliente' ? userId : null,
                 codigo_asesor: userRole === 'asesor' ? userId : null,
-                codigo_prospecto: userRole === 'asesor' ? (formData.codigo_prospecto || null) : null,
+                codigo_prospecto: userRole === 'asesor' ? (formData.codigo_prospecto ? parseInt(formData.codigo_prospecto) : null) : null,
                 fecha_inicio_prestamo: formData.fecha_inicio_prestamo
             };
             setLastPayload(payload);
@@ -738,7 +751,9 @@ const SimulationPage = () => {
                                 </section>
                                 <div className="pt-2">
                                     {userRole === 'administrador' ? (
-                                        <div className="text-[8px] text-red-500 font-bold bg-red-50 p-2 rounded-lg border border-red-100 text-center uppercase">Solo Lectura</div>
+                                        <div className="text-[9px] text-red-500 font-bold bg-red-50 p-3 rounded-xl border border-red-100 text-center uppercase tracking-tighter">Modo Lectura (Admin)</div>
+                                    ) : ((!formData.sin_bono && !formData.vivienda_sostenible && !formData.es_integrador) || formData.es_integrador) && !formData.ifi_seleccionada ? (
+                                        <div className="text-[9px] text-red-500 font-bold mb-2 bg-red-50 p-2 rounded-lg border border-red-100 text-center uppercase tracking-tighter">Debe seleccionar una entidad financiera (IFI) para continuar.</div>
                                     ) : (
                                         <button onClick={handleSimulate} disabled={loading} className="w-full bg-brand-orange hover:bg-orange-600 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-brand-orange/30 transition-all flex items-center justify-center gap-2">
                                             {loading ? "..." : <>SIMULAR <ArrowForwardIcon sx={{ fontSize: 14 }} /></>}
@@ -805,6 +820,34 @@ const SimulationPage = () => {
                                     <span className="uppercase opacity-60">Tasa Mensual (TEM)</span>
                                     <span className="text-brand-blue-light">{temValue}</span>
                                 </div>
+                            </div>
+
+                            {/* Mensaje de error del backend */}
+                            <div className="space-y-2 mt-4">
+                                {serverError ? (
+                                    <div className="bg-rose-500/15 border border-rose-500/30 p-2.5 rounded-lg">
+                                        <div className="flex items-start gap-2">
+                                            <ErrorOutlineIcon className="text-rose-400 shrink-0 mt-0.5" sx={{ fontSize: 14 }} />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[9px] font-bold text-rose-300">{serverError.titulo}</p>
+                                                <p className="text-[8px] text-rose-200/80 mt-1 leading-relaxed">{serverError.mensaje}</p>
+                                                <button
+                                                    onClick={() => setServerError(null)}
+                                                    className="mt-2 px-2 py-0.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded text-[8px] font-bold transition-colors"
+                                                >
+                                                    Cerrar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : !selectedUnit && (
+                                    <div className="bg-blue-500/15 border border-blue-500/30 p-2.5 rounded-lg">
+                                        <div className="flex items-center gap-2">
+                                            <InfoOutlinedIcon className="text-blue-400" sx={{ fontSize: 14 }} />
+                                            <p className="text-[9px] font-bold text-blue-300">Seleccione una unidad para simular</p>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
