@@ -440,6 +440,22 @@ const SimulationPage = () => {
             return;
         }
 
+        if (formData.es_propietario_vivienda) {
+            setServerError({
+                titulo: 'Restricción FMV',
+                mensaje: 'El Nuevo Crédito MiVivienda exige que ni el solicitante, el cónyuge o hijos menores sean propietarios o copropietarios de otra vivienda.'
+            });
+            return;
+        }
+
+        if (formData.tiene_credito_activo) {
+            setServerError({
+                titulo: 'Restricción FMV',
+                mensaje: 'No eres elegible para una nueva simulación o crédito porque mantienes un crédito MiVivienda (FMV) activo.'
+            });
+            return;
+        }
+
         const codigoUnidadInt = parseInt(formData.codigo_unidad);
         if (isNaN(codigoUnidadInt) || !formData.codigo_unidad) {
             setServerError({
