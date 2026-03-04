@@ -306,7 +306,7 @@ const SimulationPage = () => {
                         setProspectIFM(data.ifm);
                         setProspectStatus(`✓ Ingresos cargados (${data.type})`);
                         const typeStr = String(data.type || '').toLowerCase();
-                        setIsProspectMancomunado(typeStr.includes('mancomunado') || typeStr.includes('conyuge') || typeStr.includes('casado'));
+                        setIsProspectMancomunado(data.es_mancomunado || typeStr.includes('mancomunado') || typeStr.includes('conyuge') || typeStr.includes('casado'));
                     } else {
                         setProspectIFM(0);
                         setProspectStatus('⚠ ID no encontrado en BD');
@@ -435,7 +435,12 @@ const SimulationPage = () => {
             const rule = config.rates.find(r => montoFinanciar <= r.max) || config.rates[config.rates.length - 1];
             const isMancomunado = userRole === 'asesor'
                 ? isProspectMancomunado
-                : (parseFloat(user?.ingreso_conyuge || 0) > 0 || !!user?.nombre_conyuge);
+                : (
+                    [2, 3].includes(parseInt(user?.codigo_estado_civil || user?.rol_rel?.codigo_estado_civil || 0)) ||
+                    parseFloat(user?.ingreso_conyuge || 0) > 0 ||
+                    !!user?.nombre_conyuge ||
+                    user?.tiene_deudor_solidario === true
+                );
 
             setFormData(prev => ({
                 ...prev,
@@ -444,7 +449,7 @@ const SimulationPage = () => {
                 seguro_desgravamen: isMancomunado ? config.seguro_mancomunado : config.seguro_individual
             }));
         }
-    }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp, userRole, isProspectMancomunado, user?.ingreso_conyuge, user?.nombre_conyuge, ifiRules]);
+    }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp, userRole, isProspectMancomunado, user?.ingreso_conyuge, user?.nombre_conyuge, user?.codigo_estado_civil, user?.tiene_deudor_solidario, ifiRules]);
 
     const handleSimulate = async () => {
         if (userRole === 'administrador') {
