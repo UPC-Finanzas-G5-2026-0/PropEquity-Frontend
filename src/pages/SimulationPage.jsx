@@ -84,9 +84,17 @@ const SimulationPage = () => {
     // Cargar Reglas de IFIs (tasas y seguros) desde backend
     useEffect(() => {
         const fetchIFIs = async () => {
-            const res = await getIFIRules();
-            if (res.success && res.data) {
-                setIfiRules(res.data);
+            try {
+                const res = await getIFIRules();
+                console.log("IFI Rules Response:", res); // Debug log
+                if (res.success && res.data) {
+                    // Si el backend devuelve { success: true, data: { ...rules } }
+                    // O si devuelve { success: true, data: { data: { ...rules } } }
+                    const rules = res.data.data || res.data;
+                    setIfiRules(rules);
+                }
+            } catch (err) {
+                console.error("Error fetching IFI rules:", err);
             }
         };
         fetchIFIs();
