@@ -125,7 +125,7 @@ const CustomSelect = ({ label, name, options, value, onChange, placeholder = 'Se
                                     setIsOpen(false);
                                 }}
                                 className={`
-                                    px-4 py-2.5 cursor-pointer text-sm font-bold transition-all mx-2 rounded-xl my-0.5
+                                    px-4 py-2.5 cursor-pointer text-sm font-medium transition-all mx-2 rounded-xl my-0.5
                                     ${isSelected
                                         ? 'bg-brand-blue text-white shadow-md'
                                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:scale-[1.02]'}
