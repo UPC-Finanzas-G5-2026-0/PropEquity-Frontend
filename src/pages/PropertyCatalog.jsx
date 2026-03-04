@@ -11,7 +11,6 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 const getImageUrl = (fotoPath) => {
   if (!fotoPath) return null;
   if (fotoPath.startsWith('http')) return fotoPath;
-  // Si empieza con '/', significa que es una ruta local en /public/ (Ideal para desarrollo/demos)
   if (fotoPath.startsWith('/')) return fotoPath;
 
   const API_URL = process.env.REACT_APP_API_URL || 'https://propequity-backend.onrender.com';
