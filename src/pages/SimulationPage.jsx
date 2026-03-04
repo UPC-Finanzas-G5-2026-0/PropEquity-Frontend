@@ -86,15 +86,38 @@ const SimulationPage = () => {
         const fetchIFIs = async () => {
             try {
                 const res = await getIFIRules();
-                console.log("IFI Rules Response:", res); // Debug log
-                if (res.success && res.data) {
-                    // Si el backend devuelve { success: true, data: { ...rules } }
-                    // O si devuelve { success: true, data: { data: { ...rules } } }
+                console.log("IFI Rules Response:", res);
+                if (res.success && res.data && Object.keys(res.data).length > 0) {
                     const rules = res.data.data || res.data;
                     setIfiRules(rules);
+                } else {
+                    throw new Error("Empty rules from backend");
                 }
             } catch (err) {
-                console.error("Error fetching IFI rules:", err);
+                console.warn("Usando fallback de tasas (backend no respondió):", err);
+                // Fallback en caso el endpoint no esté listo en el servidor
+                setIfiRules({
+                    'BCP': {
+                        rates: [{ max: 90000, tea: 13.99 }, { max: 240000, tea: 13.99 }, { max: 999999, tea: 13.99 }],
+                        seguro_individual: '0.039', seguro_mancomunado: '0.070'
+                    },
+                    'BBVA': {
+                        rates: [{ max: 94999, tea: 13.10 }, { max: 999999, tea: 12.90 }],
+                        seguro_individual: '0.023', seguro_mancomunado: '0.043'
+                    },
+                    'Interbank': {
+                        rates: [{ max: 100000, tea: 12.60 }, { max: 200000, tea: 12.30 }, { max: 300000, tea: 12.20 }, { max: 999999, tea: 11.90 }],
+                        seguro_individual: '0.028', seguro_mancomunado: '0.052'
+                    },
+                    'Pichincha': {
+                        rates: [{ max: 100000, tea: 15.00 }, { max: 200000, tea: 14.00 }, { max: 999999, tea: 13.00 }],
+                        seguro_individual: '0.047', seguro_mancomunado: '0.080'
+                    },
+                    'GNB': {
+                        rates: [{ max: 999999, tea: 13.25 }],
+                        seguro_individual: '0.040', seguro_mancomunado: '0.075'
+                    }
+                });
             }
         };
         fetchIFIs();
