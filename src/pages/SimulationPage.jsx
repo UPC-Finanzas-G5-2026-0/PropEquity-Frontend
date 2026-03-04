@@ -275,7 +275,6 @@ const SimulationPage = () => {
         }
     };
 
-    // UNIFICACIÓN DE MANEJADOR DE EVENTOS (SIRVE PARA INPUTS Y SELECTS NATIVOS)
     const handleUnifiedChange = (e) => {
         const { name, value, type } = e.target;
 
