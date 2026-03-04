@@ -43,6 +43,9 @@ const SimulationPage = () => {
         ifi_seleccionada: '',
         codigo_tipo_tasa: '2', // 1: Nominal, 2: Efectiva
         tasa_anual: '10',
+        comision_periodica: '0.00',
+        portes: '0.00',
+        gastos_administracion: '0.00',
         capitalizacion: 'Mensual', // Opciones: Mensual, Bimestral, Trimestral
         plazo_meses: '240',
         codigo_tipo_gracia: '1',
@@ -145,6 +148,9 @@ const SimulationPage = () => {
                     gastos_estudio_titulos: String(data.coste_registral || '0.00'),
                     comision_estudio: String(data.comision_estudio || '0.00'),
                     comision_activacion: String(data.comision_activacion || '0.00'),
+                    comision_periodica: String(data.comision_periodica || '0.00'),
+                    portes: String(data.portes || '0.00'),
+                    gastos_administracion: String(data.gastos_administracion || '0.00'),
                     bono_bbp: String(data.bono_bbp || '0'),
                     sin_bono: !data.bono_bbp || data.bono_bbp === 0,
                     es_integrador: data.tipo_bbp === 'integrador',
@@ -456,6 +462,9 @@ const SimulationPage = () => {
                 tipo_gracia: TIPO_GRACIA_MAP[formData.codigo_tipo_gracia] || 'Ninguno',
                 meses_gracia: parseInt(formData.meses_gracia),
                 seguro_desgravamen: parseFloat(formData.seguro_desgravamen),
+                comision_periodica: parseFloat(formData.comision_periodica || 0),
+                portes: parseFloat(formData.portes || 0),
+                gastos_administracion: parseFloat(formData.gastos_administracion || 0),
                 tipo_cambio: parseFloat(formData.tipo_cambio),
                 ha_recibido_apoyo: formData.ha_recibido_apoyo,
                 tiene_credito_activo: formData.tiene_credito_activo,
@@ -684,6 +693,17 @@ const SimulationPage = () => {
                                     <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Comisión de estudio</label><input type="number" name="comision_estudio" value={formData.comision_estudio} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
                                     <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Comisión activación</label><input type="number" name="comision_activacion" value={formData.comision_activacion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
                                 </div>
+
+                                <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-2 mt-2">
+                                    <div className="w-1 h-3 bg-brand-orange rounded-full"></div>
+                                    Gastos Periódicos (Mensuales)
+                                </h3>
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Comisión Periódica</label><input type="number" name="comision_periodica" value={formData.comision_periodica} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
+                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Portes</label><input type="number" name="portes" value={formData.portes} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
+                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Gastos Admin.</label><input type="number" name="gastos_administracion" value={formData.gastos_administracion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
+                                </div>
+
                                 <div className="pt-2">
                                     {userRole === 'administrador' ? (
                                         <div className="text-[9px] text-red-500 font-bold mb-2 bg-red-50 p-2 rounded-lg border border-red-100 text-center">
@@ -840,6 +860,7 @@ const SimulationPage = () => {
                                             <th className="px-3 py-3">Interés</th>
                                             <th className="px-3 py-3">Amortización</th>
                                             <th className="px-3 py-3">Seg. Desgrav.</th>
+                                            <th className="px-3 py-3">Comisiones</th>
                                             <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue">Cuota Total</th>
                                             <th className="px-3 py-3">Saldo Final</th>
                                         </tr>
@@ -857,6 +878,7 @@ const SimulationPage = () => {
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.comisiones || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 font-black text-brand-blue bg-brand-blue/[0.01]">S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 text-gray-900 font-black">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                 </tr>
