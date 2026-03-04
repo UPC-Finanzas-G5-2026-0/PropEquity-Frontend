@@ -18,7 +18,7 @@ const getImageUrl = (fotoPath) => {
   return `${API_URL}${fotoPath}`;
 };
 
-// 🗺️ RANGOS BBP FMV (DS 004-2025-VIVIENDA)
+//  RANGOS BBP FMV (DS 004-2025-VIVIENDA)
 const BBP_RANGES = [
   { min: 68800, max: 97800, rango: 'R1', tradicional: 35100, sostenible: 41400 },
   { min: 97801, max: 146900, rango: 'R2', tradicional: 28000, sostenible: 34300 },
