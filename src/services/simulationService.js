@@ -114,6 +114,16 @@ export const exportToPDF = async (id) => {
     }
 };
 
+// Obtener reglas de las IFIs (tasas, seguros, etc)
+export const getIFIRules = async () => {
+    try {
+        const response = await api.get('/simulator/ifi-rules');
+        return { success: true, data: response.data };
+    } catch (error) {
+        return { success: false, error: 'Error al cargar reglas de bancos' };
+    }
+};
+
 // Obtener IFIs disponibles para un monto
 export const getAvailableIFIs = async (montoPrestamo) => {
     try {

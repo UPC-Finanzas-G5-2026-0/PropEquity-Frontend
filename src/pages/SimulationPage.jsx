@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import Sidebar from '../components/Sidebar';
 import { getUnits } from '../services/unitService';
-import { createSimulation, exportToExcel, exportToPDF } from '../services/simulationService';
+import { createSimulation, exportToExcel, exportToPDF, getIFIRules } from '../services/simulationService';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
@@ -64,6 +64,7 @@ const SimulationPage = () => {
 
     const [temValue, setTemValue] = useState('--');
     const [bbpData, setBbpData] = useState([]);
+    const [ifiRules, setIfiRules] = useState({});
 
     // Cargar rangos BBP desde backend
     useEffect(() => {
@@ -78,6 +79,17 @@ const SimulationPage = () => {
             }
         };
         fetchBBP();
+    }, []);
+
+    // Cargar Reglas de IFIs (tasas y seguros) desde backend
+    useEffect(() => {
+        const fetchIFIs = async () => {
+            const res = await getIFIRules();
+            if (res.success && res.data) {
+                setIfiRules(res.data);
+            }
+        };
+        fetchIFIs();
     }, []);
 
 
@@ -387,36 +399,8 @@ const SimulationPage = () => {
         const ini = cuotaType === 'porcentaje' ? (val / 100) * p : val;
         const montoFinanciar = p - ini - b;
 
-        const bankRules = {
-            'Pichincha': {
-                rates: [{ max: 100000, tea: 15.00 }, { max: 200000, tea: 14.00 }, { max: Infinity, tea: 13.00 }],
-                seguro_individual: '0.047',
-                seguro_mancomunado: '0.080'
-            },
-            'Interbank': {
-                rates: [{ max: 100000, tea: 10.60 }, { max: 200000, tea: 10.40 }, { max: 300000, tea: 10.25 }, { max: Infinity, tea: 10.05 }],
-                seguro_individual: '0.028',
-                seguro_mancomunado: '0.052'
-            },
-            'BBVA': {
-                rates: [{ max: 94999, tea: 13.10 }, { max: Infinity, tea: 12.90 }],
-                seguro_individual: '0.023',
-                seguro_mancomunado: '0.043'
-            },
-            'BCP': {
-                rates: [{ max: Infinity, tea: 13.99 }],
-                seguro_individual: '0.039',
-                seguro_mancomunado: '0.070'
-            },
-            'GNB': {
-                rates: [{ max: Infinity, tea: 13.25 }],
-                seguro_individual: '0.040',
-                seguro_mancomunado: '0.075'
-            }
-        };
-
-        const config = bankRules[formData.ifi_seleccionada];
-        if (config) {
+        const config = ifiRules[formData.ifi_seleccionada];
+        if (config && Array.isArray(config.rates)) {
             const rule = config.rates.find(r => montoFinanciar <= r.max) || config.rates[config.rates.length - 1];
             const isMancomunado = userRole === 'asesor'
                 ? isProspectMancomunado
@@ -429,7 +413,7 @@ const SimulationPage = () => {
                 seguro_desgravamen: isMancomunado ? config.seguro_mancomunado : config.seguro_individual
             }));
         }
-    }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp, userRole, isProspectMancomunado, user?.ingreso_conyuge, user?.nombre_conyuge]);
+    }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp, userRole, isProspectMancomunado, user?.ingreso_conyuge, user?.nombre_conyuge, ifiRules]);
 
     const handleSimulate = async () => {
         if (userRole === 'administrador') {
@@ -767,11 +751,10 @@ const SimulationPage = () => {
                                             placeholder="Cálculo Genérico"
                                             options={[
                                                 { id: '', label: 'Cálculo Genérico' },
-                                                { id: 'BCP', label: 'BCP' },
-                                                { id: 'BBVA', label: 'BBVA' },
-                                                { id: 'Interbank', label: 'Interbank' },
-                                                { id: 'Pichincha', label: 'Banco Pichincha' },
-                                                { id: 'GNB', label: 'GNB' }
+                                                ...Object.keys(ifiRules).map(bankName => ({
+                                                    id: bankName,
+                                                    label: bankName === 'Pichincha' ? 'Banco Pichincha' : bankName
+                                                }))
                                             ]}
                                         />
                                     </div>
