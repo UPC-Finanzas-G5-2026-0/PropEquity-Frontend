@@ -508,212 +508,167 @@ const SimulationPage = () => {
 
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start mb-6">
                     <div className="xl:col-span-9 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-
-                            {/* Inmueble y Plazo */}
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
-                                    <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
-                                    Propiedad y Plazo
-                                </h3>
-
-                                {userRole === 'asesor' && (
-                                    <div className="bg-brand-blue/5 p-3 rounded-xl border border-brand-blue/10 mb-2">
-                                        <label className="block text-[10px] font-black text-brand-blue uppercase tracking-widest mb-2 ml-1">
-                                            ID de Prospecto / Cliente
-                                        </label>
-                                        <input
-                                            type="number"
-                                            name="codigo_prospecto"
-                                            value={formData.codigo_prospecto}
-                                            onChange={handleChange}
-                                            placeholder="Ingresa el ID (ej. 5)"
-                                            className="w-full bg-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 border border-brand-blue/10 font-black text-gray-900 text-sm transition-all"
-                                        />
-                                        {prospectStatus && (
-                                            <p className={`text-[9px] font-black uppercase tracking-tight mt-2 ml-1 ${prospectStatus.includes('Error') || prospectStatus.includes('no encontrado') ? 'text-red-500' : prospectStatus.includes('Buscando') ? 'text-amber-500' : 'text-green-600'}`}>
-                                                {prospectStatus}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
-
-                                <CustomSelect label="Unidad" value={formData.codigo_unidad} showInfo={true} onChange={(val) => handleCustomChange('codigo_unidad', val)} options={units.map(u => ({ id: u.codigo_unidad, label: `${u.distrito_unidad} - ${u.direccion_unidad}` }))} />
-
-                                {selectedUnit && (() => {
-                                    const rangoInfo = getRangoInfo(selectedUnit.precio_venta, selectedUnit.moneda || selectedUnit.codigo_moneda, parseFloat(formData.tipo_cambio || 3.80));
-                                    const m = selectedUnit.moneda === 2 || selectedUnit.codigo_moneda === 2;
-                                    return (
-                                        <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100 space-y-1.5">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase">Precio</span>
-                                                <span className="text-sm font-black text-gray-900">{m ? '$' : 'S/'} {parseFloat(selectedUnit.precio_venta).toLocaleString()}</span>
-                                            </div>
-                                            {rangoInfo ? (
-                                                <p className="text-[9px] font-black text-green-600 uppercase tracking-tight flex items-center gap-1">
-                                                    <span className="w-1 h-1 rounded-full bg-green-500"></span> ✓ {rangoInfo.rango} - Elegible FMV
-                                                </p>
-                                            ) : (
-                                                <p className="text-[9px] font-black text-red-500 uppercase tracking-tight flex items-center gap-1">
-                                                    <span className="w-1 h-1 rounded-full bg-red-500"></span> ⚠ Fuera de rango FMV
-                                                </p>
-                                            )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-start">
+                            {/* ── COLUMNA 1: OPERACIÓN ── */}
+                            <div className="space-y-6">
+                                <section className="space-y-4">
+                                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                        <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
+                                        Vivienda y Plazo
+                                    </h3>
+                                    {userRole === 'asesor' && (
+                                        <div className="bg-brand-blue/5 p-3 rounded-xl border border-brand-blue/10 mb-2">
+                                            <label className="block text-[10px] font-black text-brand-blue uppercase tracking-widest mb-2 ml-1">ID de Prospecto / Cliente</label>
+                                            <input type="number" name="codigo_prospecto" value={formData.codigo_prospecto} onChange={handleChange} placeholder="Ingresa el ID (ej. 5)" className="w-full bg-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 border border-brand-blue/10 font-black text-gray-900 text-sm transition-all" />
+                                            {prospectStatus && <p className={`text-[9px] font-black uppercase tracking-tight mt-2 ml-1 ${prospectStatus.includes('Error') || prospectStatus.includes('no encontrado') ? 'text-red-500' : prospectStatus.includes('Buscando') ? 'text-amber-500' : 'text-green-600'}`}>{prospectStatus}</p>}
                                         </div>
-                                    );
-                                })()}
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Plazo de Pago</label>
-                                    <input type="number" name="plazo_meses" value={formData.plazo_meses} onChange={handleChange} min="60" max="240" className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-black text-gray-900 text-sm transition-all" />
-                                </div>
-                                <CustomSelect label="Periodo de Gracia" value={formData.codigo_tipo_gracia} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_gracia', val)} options={[{ id: '1', label: 'Sin Gracia' }, { id: '2', label: 'Parcial' }, { id: '3', label: 'Total' }]} />
-                                {formData.codigo_tipo_gracia !== '1' && (
-                                    <div className="animate-in fade-in duration-300">
-                                        <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Meses de Gracia</label>
-                                        <input type="number" name="meses_gracia" value={formData.meses_gracia} onChange={handleChange} className="w-full bg-transparent border-b border-gray-100 py-1 px-1 focus:outline-none focus:border-brand-blue font-black text-gray-700 text-sm" />
-                                    </div>
-                                )}
-                            </div>
+                                    )}
 
-                            {/* Aportes */}
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
-                                    <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
-                                    Aportes e Incentivos
-                                </h3>
-                                <div>
+                                    <CustomSelect label="Unidad" value={formData.codigo_unidad} showInfo={true} onChange={(val) => handleCustomChange('codigo_unidad', val)} options={units.map(u => ({ id: u.codigo_unidad, label: `${u.distrito_unidad} - ${u.direccion_unidad}` }))} />
+
+                                    {selectedUnit && (() => {
+                                        const rangoInfo = getRangoInfo(selectedUnit.precio_venta, selectedUnit.moneda || selectedUnit.codigo_moneda, parseFloat(formData.tipo_cambio || 3.80));
+                                        const m = selectedUnit.moneda === 2 || selectedUnit.codigo_moneda === 2;
+                                        return (
+                                            <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100 space-y-1.5">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-[10px] font-black text-gray-400 uppercase">Precio</span>
+                                                    <span className="text-sm font-black text-gray-900">{m ? '$' : 'S/'} {parseFloat(selectedUnit.precio_venta).toLocaleString()}</span>
+                                                </div>
+                                                {rangoInfo ? (
+                                                    <p className="text-[9px] font-black text-green-600 uppercase tracking-tight flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-green-500"></span> ✓ {rangoInfo.rango} - Elegible FMV</p>
+                                                ) : (
+                                                    <p className="text-[9px] font-black text-red-500 uppercase tracking-tight flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-red-500"></span> ⚠ Fuera de rango FMV</p>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Plazo (Meses)</label>
+                                            <input type="number" name="plazo_meses" value={formData.plazo_meses} onChange={handleChange} min="60" max="240" className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-black text-gray-900 text-sm transition-all" />
+                                        </div>
+                                        <CustomSelect label="Gracia" value={formData.codigo_tipo_gracia} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_gracia', val)} options={[{ id: '1', label: 'Sin Gracia' }, { id: '2', label: 'Parcial' }, { id: '3', label: 'Total' }]} />
+                                    </div>
+
+                                    {formData.codigo_tipo_gracia !== '1' && (
+                                        <div className="animate-in fade-in duration-300">
+                                            <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Meses de Gracia</label>
+                                            <input type="number" name="meses_gracia" value={formData.meses_gracia} onChange={handleChange} className="w-full bg-transparent border-b border-gray-100 py-1 px-1 focus:outline-none focus:border-brand-blue font-black text-gray-700 text-sm" />
+                                        </div>
+                                    )}
+                                </section>
+
+                                <section className="space-y-4 pt-4 border-t border-gray-100">
                                     <div className="flex justify-between items-center mb-1 ml-1">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Inicial</label>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cuota Inicial</label>
                                         <div className="flex bg-gray-50 p-0.5 rounded-lg border border-gray-100">
                                             <button onClick={() => { setCuotaType('porcentaje'); setServerError(null); }} className={`px-2 py-0.5 rounded-md text-[8px] font-black transition-all ${cuotaType === 'porcentaje' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-300'}`}>%</button>
                                             <button onClick={() => { setCuotaType('monto'); setServerError(null); }} className={`px-2 py-0.5 rounded-md text-[8px] font-black transition-all ${cuotaType === 'monto' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-300'}`}>S/</button>
                                         </div>
                                     </div>
                                     <input type="number" name="cuota_inicial" value={formData.cuota_inicial} onChange={handleChange} className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-black text-gray-900 text-sm transition-all" />
-                                </div>
-                                <div className="space-y-4 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                                    <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center border-b border-gray-200 pb-2 mb-2">Modalidad de Bono</h4>
-                                    {(() => {
-                                        // SI EL TIPO DE TASA ES NOMINAL (1), DESACTIVAMOS EL BONO VISUALMENTE
-                                        if (formData.codigo_tipo_tasa === '1') {
-                                            return (
-                                                <div className="w-full py-2 rounded-lg text-[9px] font-black uppercase text-center px-3 bg-gray-100 text-gray-400 border border-gray-200">
-                                                    Cambie a Tasa Efectiva (TEA) para usar bonos
-                                                </div>
-                                            );
-                                        }
-
-                                        const p = parseFloat(selectedUnit?.precio_venta || 0);
-                                        const mod = parseInt(selectedUnit?.codigo_modalidad || 0);
-                                        const isOwner = user?.es_propietario_vivienda;
-
-                                        if (p > 362100) return <p className="text-[8px] font-bold text-amber-500 p-2 uppercase text-center">R5: Solo Bono Integrador</p>;
-                                        if (mod === 3) return <p className="text-[8px] font-bold text-red-400 p-2 uppercase text-center">Mejoramiento: Sin BBP</p>;
-                                        if (isOwner) return <p className="text-[8px] font-bold text-red-400 p-2 uppercase text-center">Propietario actual: Sin BBP</p>;
-
-                                        const isSostenible = selectedUnit?.es_sostenible || false;
-                                        const opciones = isSostenible
-                                            ? [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Sostenible', sinBono: false, sostenible: true, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: true, integrador: true }]
-                                            : [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Tradicional', sinBono: false, sostenible: false, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: false, integrador: true }];
-                                        const activeIdx = formData.sin_bono ? 0 : formData.es_integrador ? 2 : 1;
-                                        return opciones.map((op, idx) => (
-                                            <button key={op.label} type="button" onClick={() => {
-                                                // Al elegir un bono, forzamos la Tasa a Efectiva
-                                                setFormData(prev => {
-                                                    const newData = { ...prev, sin_bono: op.sinBono, vivienda_sostenible: op.sostenible, es_integrador: op.integrador };
-                                                    if (!op.sinBono) newData.codigo_tipo_tasa = '2';
-                                                    return newData;
-                                                });
-                                                setServerError(null);
-                                            }} className={`w-full py-1.5 rounded-lg text-[9px] font-black uppercase text-left px-3 ${activeIdx === idx ? 'bg-brand-blue text-white shadow-md' : 'text-gray-400 hover:bg-gray-100/50'}`}>{op.label}</button>
-                                        ));
-                                    })()}
-                                </div>
+                                </section>
                             </div>
 
-                            {/* Banco */}
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
-                                    <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
-                                    Entidad Financiera
-                                </h3>
-                                <CustomSelect label="Entidad (IFI)" value={formData.ifi_seleccionada} showInfo={true} onChange={(val) => handleCustomChange('ifi_seleccionada', val)} options={[{ id: '', label: 'Cálculo Genérico' }, { id: 'BCP', label: 'BCP' }, { id: 'BBVA', label: 'BBVA' }, { id: 'Interbank', label: 'Interbank' }, { id: 'Pichincha', label: 'Banco Pichincha' }, { id: 'GNB', label: 'GNB' }]} />
+                            {/* ── COLUMNA 2: BANCO Y BONO ── */}
+                            <div className="space-y-6">
+                                <section className="space-y-4">
+                                    <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                        <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
+                                        Incentivos y Entidad
+                                    </h3>
 
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tasa Anual (%)</label>
-                                    <input
-                                        type="number"
-                                        name="tasa_anual"
-                                        value={formData.tasa_anual}
-                                        onChange={handleChange}
-                                        readOnly={!!formData.ifi_seleccionada}
-                                        className={`w-full rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-black text-gray-900 text-sm transition-all ${formData.ifi_seleccionada ? 'bg-gray-100 cursor-not-allowed opacity-75' : 'bg-gray-50/50'}`}
-                                    />
-                                </div>
-                                <div className={formData.ifi_seleccionada ? 'opacity-50 pointer-events-none' : ''}>
-                                    <CustomSelect label="Tipo de Tasa" value={formData.ifi_seleccionada ? '2' : formData.codigo_tipo_tasa} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_tasa', val)} options={[{ id: '1', label: 'Nominal (TNA)' }, { id: '2', label: 'Efectiva (TEA)' }]} />
-                                </div>
+                                    <div className="space-y-3 bg-gray-50/50 p-4 rounded-2xl border border-gray-100 mb-6">
+                                        <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center border-b border-gray-200 pb-2 mb-2">Modalidad de Bono</h4>
+                                        {(() => {
+                                            if (formData.codigo_tipo_tasa === '1') return <div className="w-full py-2 rounded-lg text-[9px] font-black uppercase text-center px-3 bg-gray-100 text-gray-400 border border-gray-200">Cambie a TEA para usar bonos</div>;
+                                            const p = parseFloat(selectedUnit?.precio_venta || 0);
+                                            const mod = parseInt(selectedUnit?.codigo_modalidad || 0);
+                                            if (p > 362100) return <p className="text-[8px] font-bold text-amber-500 p-2 uppercase text-center">R5: Solo Bono Integrador</p>;
+                                            if (mod === 3 || user?.es_propietario_vivienda) return <p className="text-[8px] font-bold text-red-400 p-2 uppercase text-center">Sin BBP (No califica)</p>;
 
-                                <div className={`transition-all duration-300 ${formData.codigo_tipo_tasa !== '1' ? 'opacity-30 pointer-events-none' : 'opacity-100 mb-2'}`}>
-                                    <CustomSelect
-                                        label="Capitalización"
-                                        value={formData.capitalizacion}
-                                        showInfo={true}
-                                        onChange={(val) => handleCustomChange('capitalizacion', val)}
-                                        options={[
-                                            { id: 'Mensual', label: 'Mensual' },
-                                            { id: 'Bimestral', label: 'Bimestral' },
-                                            { id: 'Trimestral', label: 'Trimestral' }
-                                        ]}
-                                    />
-                                </div>
+                                            const isSostenible = selectedUnit?.es_sostenible || false;
+                                            const opciones = isSostenible
+                                                ? [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Sostenible', sinBono: false, sostenible: true, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: true, integrador: true }]
+                                                : [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Tradicional', sinBono: false, sostenible: false, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: false, integrador: true }];
+                                            const activeIdx = formData.sin_bono ? 0 : formData.es_integrador ? 2 : 1;
+                                            return opciones.map((op, idx) => (
+                                                <button key={op.label} type="button" onClick={() => {
+                                                    setFormData(prev => ({ ...prev, sin_bono: op.sinBono, vivienda_sostenible: op.sostenible, es_integrador: op.integrador, codigo_tipo_tasa: op.sinBono ? prev.codigo_tipo_tasa : '2' }));
+                                                    setServerError(null);
+                                                }} className={`w-full py-1.5 rounded-lg text-[9px] font-black uppercase text-left px-3 ${activeIdx === idx ? 'bg-brand-blue text-white shadow-md' : 'text-gray-400 hover:bg-gray-100/50'}`}>{op.label}</button>
+                                            ));
+                                        })()}
+                                    </div>
 
-                                <div>
-                                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Seguro Desgravamen (%)</label>
-                                    <input
-                                        type="number"
-                                        name="seguro_desgravamen"
-                                        value={formData.seguro_desgravamen}
-                                        onChange={handleChange}
-                                        readOnly={!!formData.ifi_seleccionada}
-                                        className={`w-full rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-black text-gray-900 text-sm transition-all ${formData.ifi_seleccionada ? 'bg-gray-100 cursor-not-allowed opacity-75' : 'bg-gray-50/50'}`}
-                                    />
-                                </div>
-                            </div>
+                                    <CustomSelect label="Entidad (IFI)" value={formData.ifi_seleccionada} showInfo={true} onChange={(val) => handleCustomChange('ifi_seleccionada', val)} options={[{ id: '', label: 'Cálculo Genérico' }, { id: 'BCP', label: 'BCP' }, { id: 'BBVA', label: 'BBVA' }, { id: 'Interbank', label: 'Interbank' }, { id: 'Pichincha', label: 'Banco Pichincha' }, { id: 'GNB', label: 'GNB' }]} />
 
-                            {/* Detalle Gastos */}
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
-                                    <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
-                                    Gastos Iniciales
-                                </h3>
-                                <div className="grid grid-cols-1 gap-4">
-                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Costes Notariales</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
-                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Costes Registrales</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
-                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Tasación</label><input type="number" name="gastos_tasacion" value={formData.gastos_tasacion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
-                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Comisión de estudio</label><input type="number" name="comision_estudio" value={formData.comision_estudio} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
-                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Comisión activación</label><input type="number" name="comision_activacion" value={formData.comision_activacion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
-                                </div>
-
-                                <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-2 mt-2">
-                                    <div className="w-1 h-3 bg-brand-orange rounded-full"></div>
-                                    Gastos Periódicos (Mensuales)
-                                </h3>
-                                <div className="grid grid-cols-1 gap-4">
-                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Comisión Periódica</label><input type="number" name="comision_periodica" value={formData.comision_periodica} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
-                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Portes</label><input type="number" name="portes" value={formData.portes} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
-                                    <div><label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Gastos Admin.</label><input type="number" name="gastos_administracion" value={formData.gastos_administracion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-xl py-2 px-3 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-blue/10 transition-all" /></div>
-                                </div>
-
-                                <div className="pt-2">
-                                    {userRole === 'administrador' ? (
-                                        <div className="text-[9px] text-red-500 font-bold mb-2 bg-red-50 p-2 rounded-lg border border-red-100 text-center">
-                                            Los administradores tienen acceso de lectura y no pueden generar simulaciones.
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Tasa Anual (%)</label>
+                                            <input type="number" name="tasa_anual" value={formData.tasa_anual} onChange={handleChange} readOnly={!!formData.ifi_seleccionada} className={`w-full rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-black text-gray-900 text-sm transition-all ${formData.ifi_seleccionada ? 'bg-gray-100 cursor-not-allowed opacity-75' : 'bg-gray-50/50'}`} />
                                         </div>
+                                        <div>
+                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Seguro (%)</label>
+                                            <input type="number" name="seguro_desgravamen" value={formData.seguro_desgravamen} onChange={handleChange} readOnly={!!formData.ifi_seleccionada} className={`w-full rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-black text-gray-900 text-sm transition-all ${formData.ifi_seleccionada ? 'bg-gray-100 cursor-not-allowed opacity-75' : 'bg-gray-50/50'}`} />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className={formData.ifi_seleccionada ? 'opacity-50 pointer-events-none' : ''}>
+                                            <CustomSelect label="Tipo Tasa" value={formData.ifi_seleccionada ? '2' : formData.codigo_tipo_tasa} showInfo={true} onChange={(val) => handleCustomChange('codigo_tipo_tasa', val)} options={[{ id: '1', label: 'Nominal' }, { id: '2', label: 'Efectiva' }]} />
+                                        </div>
+                                        <div className={`${formData.codigo_tipo_tasa !== '1' ? 'opacity-30 pointer-events-none' : ''}`}>
+                                            <CustomSelect label="Capitalización" value={formData.capitalizacion} showInfo={true} onChange={(val) => handleCustomChange('capitalizacion', val)} options={[{ id: 'Mensual', label: 'Mensual' }, { id: 'Bimestral', label: 'Bimestral' }, { id: 'Trimestral', label: 'Trimestral' }]} />
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+
+                            {/* ── COLUMNA 3: GASTOS Y ACCIÓN ── */}
+                            <div className="space-y-6">
+                                <section className="space-y-6">
+                                    {/* Gastos Iniciales */}
+                                    <div className="space-y-3">
+                                        <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                            <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
+                                            Gastos Iniciales
+                                        </h3>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Notaría</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
+                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Registros</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
+                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Tasación</label><input type="number" name="gastos_tasacion" value={formData.gastos_tasacion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
+                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Com. Estudio</label><input type="number" name="comision_estudio" value={formData.comision_estudio} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
+                                            <div className="col-span-2"><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Com. Activación</label><input type="number" name="comision_activacion" value={formData.comision_activacion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
+                                        </div>
+                                    </div>
+
+                                    {/* Gastos Periódicos */}
+                                    <div className="space-y-3">
+                                        <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                            <div className="w-1 h-3 bg-brand-orange rounded-full"></div>
+                                            Gastos Periódicos
+                                        </h3>
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Comisión Periódica</label><input type="number" name="comision_periodica" value={formData.comision_periodica} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Portes</label><input type="number" name="portes" value={formData.portes} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
+                                                <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Gastos Admin.</label><input type="number" name="gastos_administracion" value={formData.gastos_administracion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <div className="pt-4">
+                                    {userRole === 'administrador' ? (
+                                        <div className="text-[9px] text-red-500 font-bold bg-red-50 p-3 rounded-xl border border-red-100 text-center uppercase tracking-tighter">Modo Lectura (Admin)</div>
                                     ) : ((!formData.sin_bono && !formData.vivienda_sostenible && !formData.es_integrador) || formData.es_integrador) && !formData.ifi_seleccionada ? (
-                                        <div className="text-[9px] text-red-500 font-bold mb-2 bg-red-50 p-2 rounded-lg border border-red-100 text-center">Debe seleccionar una entidad financiera (IFI) para continuar.</div>
+                                        <div className="text-[9px] text-red-500 font-bold bg-red-50 p-3 rounded-xl border border-red-100 text-center uppercase tracking-tighter">Seleccione Banco para continuar</div>
                                     ) : (
-                                        <button onClick={handleSimulate} disabled={loading} className="w-full bg-brand-orange hover:bg-orange-600 text-white py-2.5 rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-brand-orange/20 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95">
-                                            {loading ? "Calculando..." : <>GENERAR PROYECCIÓN <ArrowForwardIcon sx={{ fontSize: 14 }} /></>}
+                                        <button onClick={handleSimulate} disabled={loading} className="w-full bg-brand-orange hover:bg-orange-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-lg shadow-brand-orange/30 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-95">
+                                            {loading ? "Calculando..." : <>GENERAR PROYECCIÓN <ArrowForwardIcon sx={{ fontSize: 16 }} /></>}
                                         </button>
                                     )}
                                 </div>
