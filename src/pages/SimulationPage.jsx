@@ -702,7 +702,32 @@ const SimulationPage = () => {
                                     <p className="text-[11px] font-black text-white">S/ {userRole === 'asesor' ? parseFloat(prospectIFM || 0).toLocaleString() : (parseFloat(user?.ingreso_mensual || 0) + parseFloat(user?.ingreso_conyuge || 0)).toLocaleString()}</p>
                                 </div>
                             </div>
-                            <div className="bg-white/5 p-3 rounded-xl border border-white/10 space-y-1.5">
+                            {result && (
+                                <div className="pt-3 mt-3 border-t border-white/10 space-y-2 px-1">
+                                    <div className="flex justify-between items-center text-rose-300">
+                                        <p className="text-[8px] uppercase font-black tracking-widest opacity-60">Intereses Totales</p>
+                                        <p className="text-[10px] font-black">S/ {parseFloat(result.resumen?.total_intereses || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                    </div>
+                                    <div className="flex justify-between items-center text-amber-300">
+                                        <p className="text-[8px] uppercase font-black tracking-widest opacity-60">Comisiones Totales</p>
+                                        <p className="text-[10px] font-black">S/ {parseFloat(result.resumen?.total_comisiones_periodicas || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                    </div>
+                                    <div className="flex justify-between items-center text-pink-300">
+                                        <p className="text-[8px] uppercase font-black tracking-widest opacity-60">Portes y Gastos</p>
+                                        <p className="text-[10px] font-black">S/ {parseFloat(result.resumen?.total_portes_gastos_adm || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                    </div>
+                                    <div className="flex justify-between items-center text-violet-300">
+                                        <p className="text-[8px] uppercase font-black tracking-widest opacity-60">Seguros Totales</p>
+                                        <p className="text-[10px] font-black">S/ {parseFloat(result.resumen?.total_seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                    </div>
+                                    <div className="pt-2 border-t border-white/5 flex justify-between items-center text-white">
+                                        <p className="text-[9px] uppercase font-black tracking-[0.1em]">Total Pagado</p>
+                                        <p className="text-sm font-black text-brand-blue-light">S/ {parseFloat(result.resumen?.total_pagado || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="bg-white/5 p-3 rounded-xl border border-white/10 space-y-1.5 mt-2">
                                 <div className="flex justify-between text-[9px] font-bold text-gray-300">
                                     <span className="uppercase opacity-60">Tasa Mensual (TEM)</span>
                                     <span className="text-brand-blue-light">{temValue}</span>
@@ -763,6 +788,53 @@ const SimulationPage = () => {
                                 </div>
                             ))}
                         </div>
+
+                        {/* ── Resumen de Costos Totales ── */}
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                            <div className="col-span-2 lg:col-span-4 flex items-center gap-2 mb-1">
+                                <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Resumen de Costos Totales</p>
+                            </div>
+                            {[
+                                {
+                                    label: 'Intereses Totales',
+                                    value: `S/ ${parseFloat(result?.resumen?.total_intereses || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`,
+                                    accent: '#64748B',
+                                    icon: <TrendingDownIcon sx={{ fontSize: 16 }} />
+                                },
+                                {
+                                    label: 'Comisiones Periódicas',
+                                    value: `S/ ${parseFloat(result?.resumen?.total_comisiones_periodicas || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`,
+                                    accent: '#F59E0B',
+                                    icon: <PaymentsIcon sx={{ fontSize: 16 }} />
+                                },
+                                {
+                                    label: 'Portes / Gastos Adm.',
+                                    value: `S/ ${parseFloat(result?.resumen?.total_portes_gastos_adm || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`,
+                                    accent: '#EC4899',
+                                    icon: <AccountBalanceWalletIcon sx={{ fontSize: 16 }} />
+                                },
+                                {
+                                    label: 'Seguros Totales',
+                                    value: `S/ ${parseFloat(result?.resumen?.total_seguro || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`,
+                                    accent: '#8B5CF6',
+                                    icon: <AccountBalanceIcon sx={{ fontSize: 16 }} />
+                                }
+                            ].map((stat, i) => (
+                                <div key={i} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center gap-4 hover:shadow-lg transition-all group relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: stat.accent }}></div>
+                                    <div className="p-2 rounded-xl bg-gray-50 text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all" style={{ color: stat.accent }}>
+                                        {stat.icon}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
+                                        <p className="text-[13px] font-black leading-none truncate mb-1" style={{ color: stat.accent }}>{stat.value}</p>
+                                        <p className="text-[8px] font-bold text-gray-300 uppercase leading-none">Acumulado</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="p-4 border-b border-gray-50 flex justify-between items-center">
                                 <h3 className="text-xs font-black text-gray-900 uppercase tracking-tighter">Cronograma de Pagos</h3>
