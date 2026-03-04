@@ -586,7 +586,7 @@ const SimulationPage = () => {
                                     {userRole === 'asesor' && (
                                         <div className="bg-brand-blue/5 p-3 rounded-xl border border-brand-blue/10 mb-2">
                                             <label className="block text-[10px] font-bold text-brand-blue uppercase tracking-widest mb-2 ml-1">ID de Prospecto / Cliente</label>
-                                            <input type="number" name="codigo_prospecto" value={formData.codigo_prospecto} onChange={handleUnifiedChange} placeholder="Ingresa el ID (ej. 5)" className="w-full bg-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 border border-brand-blue/10 font-bold text-gray-700 text-sm transition-all" />
+                                            <input type="number" name="codigo_prospecto" value={formData.codigo_prospecto} onChange={handleUnifiedChange} placeholder="Ingresa el ID (ej. 5)" className="w-full bg-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 border border-brand-blue/10 font-medium text-gray-700 text-sm transition-all" />
                                             {prospectStatus && <p className={`text-[10px] font-bold uppercase tracking-tight mt-2 ml-1 ${prospectStatus.includes('Error') || prospectStatus.includes('no encontrado') ? 'text-red-500' : prospectStatus.includes('Buscando') ? 'text-amber-500' : 'text-green-600'}`}>{prospectStatus}</p>}
                                         </div>
                                     )}
@@ -610,14 +610,14 @@ const SimulationPage = () => {
                                     )}
 
                                     <div>
-                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Fecha de Inicio</label>
+                                        <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Fecha de Inicio</label>
                                         <input type="date" name="fecha_inicio_prestamo" value={formData.fecha_inicio_prestamo} onChange={handleUnifiedChange} className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none border border-gray-100 font-bold text-gray-900 text-sm" />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Plazo (Meses)</label>
-                                            <input type="number" name="plazo_meses" value={formData.plazo_meses} onChange={handleUnifiedChange} min="60" max="240" className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-bold text-gray-700 text-sm transition-all" />
+                                            <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Plazo (Meses)</label>
+                                            <input type="number" name="plazo_meses" value={formData.plazo_meses} onChange={handleUnifiedChange} min="60" max="240" className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-medium text-gray-700 text-sm transition-all" />
                                         </div>
                                         <CustomSelect
                                             label="Gracia"
@@ -634,7 +634,7 @@ const SimulationPage = () => {
 
                                     {formData.codigo_tipo_gracia !== '1' && (
                                         <div className="animate-in fade-in duration-300">
-                                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Meses de Gracia</label>
+                                            <label className="block text-[10px] font-medium text-gray-400 uppercase mb-1 ml-1">Meses de Gracia</label>
                                             <input type="number" name="meses_gracia" value={formData.meses_gracia} onChange={handleUnifiedChange} className="w-full bg-transparent border-b border-gray-100 py-1 px-1 focus:outline-none focus:border-brand-blue font-bold text-gray-700 text-sm" />
                                         </div>
                                     )}
@@ -642,13 +642,13 @@ const SimulationPage = () => {
 
                                 <section className="space-y-4 pt-4 border-t border-gray-100">
                                     <div className="flex justify-between items-center mb-1 ml-1">
-                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cuota Inicial</label>
+                                        <label className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Cuota Inicial</label>
                                         <div className="flex bg-gray-50 p-0.5 rounded-lg border border-gray-100">
                                             <button onClick={() => { setCuotaType('porcentaje'); setServerError(null); }} className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${cuotaType === 'porcentaje' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-300'}`}>%</button>
                                             <button onClick={() => { setCuotaType('monto'); setServerError(null); }} className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${cuotaType === 'monto' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-300'}`}>S/</button>
                                         </div>
                                     </div>
-                                    <input type="number" name="cuota_inicial" value={formData.cuota_inicial} onChange={handleUnifiedChange} className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-bold text-gray-700 text-sm transition-all" />
+                                    <input type="number" name="cuota_inicial" value={formData.cuota_inicial} onChange={handleUnifiedChange} className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-medium text-gray-700 text-sm transition-all" />
                                 </section>
                             </div>
                             {/* ── COLUMNA 2: BANCO Y BONO ── */}
@@ -724,7 +724,7 @@ const SimulationPage = () => {
                                             </div>
 
                                             <div className="p-3 bg-white rounded-xl border border-gray-100 space-y-2">
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center border-b border-gray-100 pb-1">Declaraciones FMV</p>
+                                                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest text-center border-b border-gray-100 pb-1">Declaraciones FMV</p>
                                                 <div className="grid grid-cols-1 gap-1.5">
                                                     <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="es_propietario_vivienda" checked={formData.es_propietario_vivienda} onChange={(e) => setFormData(prev => ({ ...prev, es_propietario_vivienda: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[10px] font-bold text-gray-500 uppercase">¿Es Propietario?</span></label>
                                                     <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="ha_recibido_apoyo" checked={formData.ha_recibido_apoyo} onChange={(e) => setFormData(prev => ({ ...prev, ha_recibido_apoyo: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[10px] font-bold text-gray-500 uppercase">¿Apoyo FMV previo?</span></label>
@@ -762,11 +762,11 @@ const SimulationPage = () => {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">TEA (%)</label>
+                                            <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">TEA (%)</label>
                                             <input type="number" name="tasa_anual" value={formData.tasa_anual} onChange={handleUnifiedChange} readOnly={!!formData.ifi_seleccionada} className={`w-full rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-bold text-gray-700 text-sm transition-all ${formData.ifi_seleccionada ? 'bg-gray-100 opacity-60' : 'bg-white'}`} />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Desgrav. (%)</label>
+                                            <label className="block text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-2 ml-1">Desgrav. (%)</label>
                                             <input type="number" name="seguro_desgravamen" value={formData.seguro_desgravamen} onChange={handleUnifiedChange} readOnly={!!formData.ifi_seleccionada} className={`w-full rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-bold text-gray-700 text-sm transition-all ${formData.ifi_seleccionada ? 'bg-gray-100 opacity-60' : 'bg-white'}`} />
                                         </div>
                                     </div>
@@ -809,7 +809,7 @@ const SimulationPage = () => {
                                     </h3>
 
                                     <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Gastos Iniciales</h4>
+                                        <h4 className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Gastos Iniciales</h4>
                                         <div className="grid grid-cols-2 gap-3">
                                             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Notaría</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-sm font-bold focus:outline-none" /></div>
                                             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Registros</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-sm font-bold focus:outline-none" /></div>
@@ -820,7 +820,7 @@ const SimulationPage = () => {
                                     </div>
 
                                     <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Gastos Periódicos</h4>
+                                        <h4 className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Gastos Periódicos</h4>
                                         <div className="space-y-3">
                                             <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Comisión Periódica</label><input type="number" name="comision_periodica" value={formData.comision_periodica} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-sm font-bold focus:outline-none" /></div>
                                             <div className="grid grid-cols-2 gap-3">
@@ -887,11 +887,11 @@ const SimulationPage = () => {
                             {result && !serverError && (
                                 <div className="pt-3 mt-3 border-t border-white/10 space-y-2 px-1">
                                     <div className="flex justify-between items-center text-rose-300">
-                                        <p className="text-[10px] uppercase font-bold tracking-widest opacity-60">Intereses Totales</p>
+                                        <p className="text-[10px] uppercase font-medium tracking-widest opacity-60">Intereses Totales</p>
                                         <p className="text-[10px] font-bold">S/ {parseFloat(result.resumen?.total_intereses || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                     </div>
                                     <div className="flex justify-between items-center text-amber-300 opacity-80">
-                                        <p className="text-[10px] uppercase font-bold">Comisiones</p>
+                                        <p className="text-[10px] uppercase font-medium">Comisiones</p>
                                         <p className="text-[10px] font-bold">S/ {parseFloat(result.resumen?.total_comisiones_periodicas || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                     </div>
                                     <div className="flex justify-between items-center text-white font-bold pt-2 border-t border-white/5">
@@ -948,7 +948,7 @@ const SimulationPage = () => {
                                         {stat.icon}
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
+                                        <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
                                         <p className="text-sm font-bold leading-none truncate mb-1" style={{ color: stat.accent }}>{stat.value}</p>
                                         <p className="text-[10px] font-bold text-gray-300 uppercase leading-none">{stat.sublabel}</p>
                                     </div>
@@ -1024,7 +1024,7 @@ const SimulationPage = () => {
                                                     <td className="px-2 py-2.5 text-center text-gray-500">{new Date(d.fecha_vencimiento).toLocaleDateString('es-PE')}</td>
                                                     <td className="px-3 py-2.5 text-center text-gray-500">{d.tea ? `${parseFloat(d.tea).toFixed(2)}%` : '—'}</td>
                                                     <td className="px-3 py-2.5 text-center text-gray-500">{d.tem ? `${parseFloat(d.tem).toFixed(4)}%` : '—'}</td>
-                                                    <td className="px-3 py-2.5 text-gray-600 font-bold">S/ {parseFloat(d.saldo_inicial || d.saldo_inicio || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-600 font-medium">S/ {parseFloat(d.saldo_inicial || d.saldo_inicio || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
@@ -1032,7 +1032,7 @@ const SimulationPage = () => {
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.portes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.gastos_administracion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 font-bold text-brand-blue bg-brand-blue/[0.01]">S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-900 font-bold">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-900 font-medium">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                 </tr>
                                             );
                                         })}

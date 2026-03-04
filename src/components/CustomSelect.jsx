@@ -37,7 +37,7 @@ const CustomSelect = ({ label, name, options, value, onChange, placeholder = 'Se
     return (
         <div className={`relative w-full text-left ${disabled ? 'opacity-50 pointer-events-none' : ''}`} ref={dropdownRef}>
             {label && (
-                <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2 ml-1">
+                <label className="flex items-center gap-1.5 text-[10px] font-medium text-gray-500 uppercase tracking-widest mb-2 ml-1">
                     {label}
                     {showInfo && (
                         <Tooltip
@@ -90,12 +90,12 @@ const CustomSelect = ({ label, name, options, value, onChange, placeholder = 'Se
                 className={`
                     w-full bg-gray-50/50 border border-gray-100 py-2.5 px-3 rounded-xl flex items-center justify-between
                     ${!disabled ? 'focus:outline-none focus:ring-2 focus:ring-brand-blue/30 transition-all hover:bg-white' : 'cursor-not-allowed'}
-                    text-sm font-bold text-gray-700 cursor-pointer
+                    text-sm font-medium text-gray-700 cursor-pointer
                 `}
             >
                 <div className="flex items-center gap-2 truncate">
                     {icon && <span className="text-gray-400">{icon}</span>}
-                    <span className={!selectedOption ? 'text-gray-400 font-bold' : ''}>
+                    <span className={!selectedOption ? 'text-gray-400 font-medium' : ''}>
                         {selectedOption ? selectedOption.label : placeholder}
                     </span>
                 </div>
