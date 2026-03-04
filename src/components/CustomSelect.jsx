@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { Tooltip } from '@mui/material';
 
-const CustomSelect = ({ label, options, value, onChange, placeholder = 'Seleccionar...', icon, showInfo = false }) => {
+const CustomSelect = ({ label, options, value, onChange, placeholder = 'Seleccionar...', icon, showInfo = false, disabled = false }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -35,7 +35,7 @@ const CustomSelect = ({ label, options, value, onChange, placeholder = 'Seleccio
     };
 
     return (
-        <div className="relative w-full text-left" ref={dropdownRef}>
+        <div className={`relative w-full text-left ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`} ref={dropdownRef}>
             {label && (
                 <label className="flex items-center gap-1.5 text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1.5 ml-1">
                     {label}
@@ -85,10 +85,11 @@ const CustomSelect = ({ label, options, value, onChange, placeholder = 'Seleccio
             )}
             <button
                 type="button"
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                disabled={disabled}
                 className={`
                     w-full bg-gray-50 border border-gray-200 py-2 px-3 rounded-lg flex items-center justify-between
-                    focus:outline-none focus:ring-2 focus:ring-brand-blue/10 focus:border-brand-blue transition-all
+                    ${!disabled ? 'focus:outline-none focus:ring-2 focus:ring-brand-blue/10 focus:border-brand-blue transition-all' : 'cursor-not-allowed'}
                     text-sm font-medium text-gray-700
                 `}
             >
