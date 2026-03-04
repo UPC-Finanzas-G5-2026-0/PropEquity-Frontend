@@ -28,7 +28,7 @@ const PropertyCatalogPage = () => {
       try {
         const response = await getUnits();
         if (response.success) {
-          // Filtramos para que solo se muestren las propiedades "Activas" (Disponibles)
+
           const activeUnits = response.data.filter(u => u.codigo_estado === 1);
           setProperties(activeUnits);
         }
