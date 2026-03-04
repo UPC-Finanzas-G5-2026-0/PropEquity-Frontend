@@ -526,7 +526,7 @@ const SimulationPage = () => {
         const precio_neto = precio - bonoAplicado;
         const monto_financiar = (precio_neto - finalCuotaInicial) + totalGastosIniciales;
 
-        // Validar 90% (Solo para Compra)
+
         const mod = parseInt(selectedUnit?.codigo_modalidad || 1);
         if (mod === 1 || mod === 0) {
             const max_financiar = precio * 0.90;
