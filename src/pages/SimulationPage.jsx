@@ -1011,7 +1011,7 @@ const SimulationPage = () => {
                                             <th className="px-3 py-3">Comisión</th>
                                             <th className="px-3 py-3">Portes</th>
                                             <th className="px-3 py-3">Gastos Adm.</th>
-                                            <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue font-bold">Flujo</th>
+                                            <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue font-bold">Cuota</th>
                                             <th className="px-3 py-3">Saldo Final</th>
                                         </tr>
                                     </thead>
