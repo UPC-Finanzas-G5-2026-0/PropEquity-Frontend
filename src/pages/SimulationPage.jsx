@@ -578,16 +578,16 @@ const SimulationPage = () => {
                             {/* ── COLUMNA 1: OPERACIÓN ── */}
                             <div className="space-y-6">
                                 <section className="space-y-4">
-                                    <h3 className="text-xs font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
                                         <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
                                         Vivienda y Plazo
                                     </h3>
 
                                     {userRole === 'asesor' && (
                                         <div className="bg-brand-blue/5 p-3 rounded-xl border border-brand-blue/10 mb-2">
-                                            <label className="block text-[10px] font-black text-brand-blue uppercase tracking-widest mb-2 ml-1">ID de Prospecto / Cliente</label>
+                                            <label className="block text-[10px] font-bold text-brand-blue uppercase tracking-widest mb-2 ml-1">ID de Prospecto / Cliente</label>
                                             <input type="number" name="codigo_prospecto" value={formData.codigo_prospecto} onChange={handleUnifiedChange} placeholder="Ingresa el ID (ej. 5)" className="w-full bg-white rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 border border-brand-blue/10 font-bold text-gray-700 text-sm transition-all" />
-                                            {prospectStatus && <p className={`text-[9px] font-black uppercase tracking-tight mt-2 ml-1 ${prospectStatus.includes('Error') || prospectStatus.includes('no encontrado') ? 'text-red-500' : prospectStatus.includes('Buscando') ? 'text-amber-500' : 'text-green-600'}`}>{prospectStatus}</p>}
+                                            {prospectStatus && <p className={`text-[10px] font-bold uppercase tracking-tight mt-2 ml-1 ${prospectStatus.includes('Error') || prospectStatus.includes('no encontrado') ? 'text-red-500' : prospectStatus.includes('Buscando') ? 'text-amber-500' : 'text-green-600'}`}>{prospectStatus}</p>}
                                         </div>
                                     )}
 
@@ -603,20 +603,20 @@ const SimulationPage = () => {
                                     {selectedUnit && (
                                         <div className="bg-gray-50/50 p-3 rounded-xl border border-gray-100 space-y-1.5">
                                             <div className="flex justify-between items-center">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase">Precio</span>
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase">Precio</span>
                                                 <span className="text-sm font-bold text-gray-700">{selectedUnit.moneda === 2 || selectedUnit.codigo_moneda === 2 ? '$' : 'S/'} {parseFloat(selectedUnit.precio_venta).toLocaleString()}</span>
                                             </div>
                                         </div>
                                     )}
 
                                     <div>
-                                        <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Fecha de Inicio</label>
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Fecha de Inicio</label>
                                         <input type="date" name="fecha_inicio_prestamo" value={formData.fecha_inicio_prestamo} onChange={handleUnifiedChange} className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none border border-gray-100 font-bold text-gray-900 text-sm" />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Plazo (Meses)</label>
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Plazo (Meses)</label>
                                             <input type="number" name="plazo_meses" value={formData.plazo_meses} onChange={handleUnifiedChange} min="60" max="240" className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-bold text-gray-700 text-sm transition-all" />
                                         </div>
                                         <CustomSelect
@@ -634,18 +634,18 @@ const SimulationPage = () => {
 
                                     {formData.codigo_tipo_gracia !== '1' && (
                                         <div className="animate-in fade-in duration-300">
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Meses de Gracia</label>
-                                            <input type="number" name="meses_gracia" value={formData.meses_gracia} onChange={handleUnifiedChange} className="w-full bg-transparent border-b border-gray-100 py-1 px-1 focus:outline-none focus:border-brand-blue font-black text-gray-700 text-sm" />
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1 ml-1">Meses de Gracia</label>
+                                            <input type="number" name="meses_gracia" value={formData.meses_gracia} onChange={handleUnifiedChange} className="w-full bg-transparent border-b border-gray-100 py-1 px-1 focus:outline-none focus:border-brand-blue font-bold text-gray-700 text-sm" />
                                         </div>
                                     )}
                                 </section>
 
                                 <section className="space-y-4 pt-4 border-t border-gray-100">
                                     <div className="flex justify-between items-center mb-1 ml-1">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cuota Inicial</label>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Cuota Inicial</label>
                                         <div className="flex bg-gray-50 p-0.5 rounded-lg border border-gray-100">
-                                            <button onClick={() => { setCuotaType('porcentaje'); setServerError(null); }} className={`px-2 py-0.5 rounded-md text-[8px] font-black transition-all ${cuotaType === 'porcentaje' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-300'}`}>%</button>
-                                            <button onClick={() => { setCuotaType('monto'); setServerError(null); }} className={`px-2 py-0.5 rounded-md text-[8px] font-black transition-all ${cuotaType === 'monto' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-300'}`}>S/</button>
+                                            <button onClick={() => { setCuotaType('porcentaje'); setServerError(null); }} className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${cuotaType === 'porcentaje' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-300'}`}>%</button>
+                                            <button onClick={() => { setCuotaType('monto'); setServerError(null); }} className={`px-2 py-0.5 rounded-md text-[10px] font-bold transition-all ${cuotaType === 'monto' ? 'bg-white text-brand-blue shadow-sm' : 'text-gray-300'}`}>S/</button>
                                         </div>
                                     </div>
                                     <input type="number" name="cuota_inicial" value={formData.cuota_inicial} onChange={handleUnifiedChange} className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-bold text-gray-700 text-sm transition-all" />
@@ -654,7 +654,7 @@ const SimulationPage = () => {
                             {/* ── COLUMNA 2: BANCO Y BONO ── */}
                             <div className="space-y-6">
                                 <section className="space-y-4">
-                                    <h3 className="text-xs font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
                                         <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
                                         Incentivos y Entidad
                                     </h3>
@@ -662,9 +662,9 @@ const SimulationPage = () => {
                                     <div className="p-3 bg-gray-50/50 rounded-2xl border border-gray-100">
                                         <div className="space-y-4">
                                             <div className="bg-white p-3 rounded-xl border border-gray-100">
-                                                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center border-b border-gray-100 pb-2 mb-3">Modalidad de Bono</h4>
+                                                <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest text-center border-b border-gray-100 pb-2 mb-3">Modalidad de Bono</h4>
                                                 {(() => {
-                                                    if (formData.codigo_tipo_tasa === '1') return <div className="text-center text-[8px] text-gray-400 p-2 uppercase font-bold">Cambie a TEA para usar bonos</div>;
+                                                    if (formData.codigo_tipo_tasa === '1') return <div className="text-center text-[10px] text-gray-400 p-2 uppercase font-bold">Cambie a TEA para usar bonos</div>;
                                                     const p = parseFloat(selectedUnit?.precio_venta || 0);
                                                     const mod = parseInt(selectedUnit?.codigo_modalidad || 0);
                                                     const isRestricted = formData.ha_recibido_apoyo || formData.tiene_credito_activo || formData.es_propietario_vivienda;
@@ -673,9 +673,9 @@ const SimulationPage = () => {
                                                         if (formData.es_propietario_vivienda) msg = "Ya es propietario (No califica)";
                                                         else if (formData.ha_recibido_apoyo) msg = "Ya recibió apoyo (No califica)";
                                                         else if (formData.tiene_credito_activo) msg = "Tiene crédito activo (No califica)";
-                                                        return <p className="text-[8px] font-bold text-red-500 p-2 uppercase text-center">{msg}</p>;
+                                                        return <p className="text-[10px] font-bold text-red-500 p-2 uppercase text-center">{msg}</p>;
                                                     }
-                                                    if (p > 362100) return <p className="text-[8px] font-bold text-amber-500 p-2 uppercase text-center">R5: Solo Bono Integrador</p>;
+                                                    if (p > 362100) return <p className="text-[10px] font-bold text-amber-500 p-2 uppercase text-center">R5: Solo Bono Integrador</p>;
 
                                                     const isSostenible = selectedUnit?.es_sostenible || false;
                                                     const opciones = isSostenible
@@ -685,7 +685,7 @@ const SimulationPage = () => {
                                                     return (
                                                         <div className="space-y-2">
                                                             {opciones.map((op, idx) => (
-                                                                <button key={op.label} type="button" onClick={() => setFormData(prev => ({ ...prev, sin_bono: op.sinBono, vivienda_sostenible: op.sostenible, es_integrador: op.integrador, codigo_tipo_tasa: '2' }))} className={`w-full py-1.5 rounded-lg text-[9px] font-black uppercase text-left px-3 ${activeIdx === idx ? 'bg-brand-blue text-white shadow-sm' : 'text-gray-400 hover:bg-gray-100/50'}`}>{op.label}</button>
+                                                                <button key={op.label} type="button" onClick={() => setFormData(prev => ({ ...prev, sin_bono: op.sinBono, vivienda_sostenible: op.sostenible, es_integrador: op.integrador, codigo_tipo_tasa: '2' }))} className={`w-full py-1.5 rounded-lg text-[10px] font-bold uppercase text-left px-3 ${activeIdx === idx ? 'bg-brand-blue text-white shadow-sm' : 'text-gray-400 hover:bg-gray-100/50'}`}>{op.label}</button>
                                                             ))}
                                                             {formData.es_integrador && (
                                                                 <div className="pt-2 animate-in fade-in duration-300">
@@ -708,7 +708,7 @@ const SimulationPage = () => {
                                                                             return (
                                                                                 <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-100 rounded-lg mt-2 animate-in slide-in-from-top-1 duration-200">
                                                                                     <InfoOutlinedIcon className="text-amber-600 shrink-0" sx={{ fontSize: 12 }} />
-                                                                                    <p className="text-[8px] text-amber-700 font-bold leading-tight uppercase">
+                                                                                    <p className="text-[10px] text-amber-700 font-bold leading-tight uppercase">
                                                                                         Ingreso Familiar (S/ {ifm.toLocaleString()}) excede el límite de S/ 4,746 para esta categoría.
                                                                                     </p>
                                                                                 </div>
@@ -724,16 +724,16 @@ const SimulationPage = () => {
                                             </div>
 
                                             <div className="p-3 bg-white rounded-xl border border-gray-100 space-y-2">
-                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center border-b border-gray-100 pb-1">Declaraciones FMV</p>
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center border-b border-gray-100 pb-1">Declaraciones FMV</p>
                                                 <div className="grid grid-cols-1 gap-1.5">
-                                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="es_propietario_vivienda" checked={formData.es_propietario_vivienda} onChange={(e) => setFormData(prev => ({ ...prev, es_propietario_vivienda: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[9px] font-bold text-gray-500 uppercase">¿Es Propietario?</span></label>
-                                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="ha_recibido_apoyo" checked={formData.ha_recibido_apoyo} onChange={(e) => setFormData(prev => ({ ...prev, ha_recibido_apoyo: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[9px] font-bold text-gray-500 uppercase">¿Apoyo FMV previo?</span></label>
-                                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="tiene_credito_activo" checked={formData.tiene_credito_activo} onChange={(e) => setFormData(prev => ({ ...prev, tiene_credito_activo: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[9px] font-bold text-gray-500 uppercase">¿Crédito Activo?</span></label>
+                                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="es_propietario_vivienda" checked={formData.es_propietario_vivienda} onChange={(e) => setFormData(prev => ({ ...prev, es_propietario_vivienda: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[10px] font-bold text-gray-500 uppercase">¿Es Propietario?</span></label>
+                                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="ha_recibido_apoyo" checked={formData.ha_recibido_apoyo} onChange={(e) => setFormData(prev => ({ ...prev, ha_recibido_apoyo: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[10px] font-bold text-gray-500 uppercase">¿Apoyo FMV previo?</span></label>
+                                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="tiene_credito_activo" checked={formData.tiene_credito_activo} onChange={(e) => setFormData(prev => ({ ...prev, tiene_credito_activo: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[10px] font-bold text-gray-500 uppercase">¿Crédito Activo?</span></label>
                                                 </div>
                                                 {(formData.es_propietario_vivienda || formData.ha_recibido_apoyo || formData.tiene_credito_activo) && (
                                                     <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-100 rounded-lg mt-1 animate-in zoom-in-95 duration-200">
                                                         <ErrorOutlineIcon className="text-red-500 shrink-0" sx={{ fontSize: 12 }} />
-                                                        <p className="text-[8px] text-red-600 font-bold leading-tight uppercase">
+                                                        <p className="text-[10px] text-red-600 font-bold leading-tight uppercase">
                                                             Restricción BBP aplicada: El perfil no califica para bonos estatales.
                                                         </p>
                                                     </div>
@@ -762,11 +762,11 @@ const SimulationPage = () => {
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">TEA (%)</label>
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">TEA (%)</label>
                                             <input type="number" name="tasa_anual" value={formData.tasa_anual} onChange={handleUnifiedChange} readOnly={!!formData.ifi_seleccionada} className={`w-full rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-bold text-gray-700 text-sm transition-all ${formData.ifi_seleccionada ? 'bg-gray-100 opacity-60' : 'bg-white'}`} />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Desgrav. (%)</label>
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Desgrav. (%)</label>
                                             <input type="number" name="seguro_desgravamen" value={formData.seguro_desgravamen} onChange={handleUnifiedChange} readOnly={!!formData.ifi_seleccionada} className={`w-full rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-brand-blue/10 border border-gray-100 font-bold text-gray-700 text-sm transition-all ${formData.ifi_seleccionada ? 'bg-gray-100 opacity-60' : 'bg-white'}`} />
                                         </div>
                                     </div>
@@ -803,29 +803,29 @@ const SimulationPage = () => {
                             {/* ── COLUMNA 3: GASTOS ── */}
                             <div className="space-y-6">
                                 <section className="space-y-4">
-                                    <h3 className="text-xs font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
+                                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
                                         <div className="w-[3px] h-3.5 bg-brand-orange"></div>
                                         Gastos
                                     </h3>
 
                                     <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Gastos Iniciales</h4>
+                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Gastos Iniciales</h4>
                                         <div className="grid grid-cols-2 gap-3">
-                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Notaría</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
-                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Registros</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
-                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Tasación</label><input type="number" name="gastos_tasacion" value={formData.gastos_tasacion} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
-                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Com. Estudio</label><input type="number" name="comision_estudio" value={formData.comision_estudio} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
-                                            <div className="col-span-2"><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Com. Activación</label><input type="number" name="comision_activacion" value={formData.comision_activacion} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
+                                            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Notaría</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-sm font-bold focus:outline-none" /></div>
+                                            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Registros</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-sm font-bold focus:outline-none" /></div>
+                                            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tasación</label><input type="number" name="gastos_tasacion" value={formData.gastos_tasacion} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-sm font-bold focus:outline-none" /></div>
+                                            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Com. Estudio</label><input type="number" name="comision_estudio" value={formData.comision_estudio} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-sm font-bold focus:outline-none" /></div>
+                                            <div className="col-span-2"><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Com. Activación</label><input type="number" name="comision_activacion" value={formData.comision_activacion} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-sm font-bold focus:outline-none" /></div>
                                         </div>
                                     </div>
 
                                     <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Gastos Periódicos</h4>
+                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Gastos Periódicos</h4>
                                         <div className="space-y-3">
-                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Comisión Periódica</label><input type="number" name="comision_periodica" value={formData.comision_periodica} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
+                                            <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Comisión Periódica</label><input type="number" name="comision_periodica" value={formData.comision_periodica} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-sm font-bold focus:outline-none" /></div>
                                             <div className="grid grid-cols-2 gap-3">
-                                                <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Portes</label><input type="number" name="portes" value={formData.portes} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
-                                                <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Gastos Admin.</label><input type="number" name="gastos_administracion" value={formData.gastos_administracion} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-xs font-bold focus:outline-none" /></div>
+                                                <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Portes</label><input type="number" name="portes" value={formData.portes} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-sm font-bold focus:outline-none" /></div>
+                                                <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Gastos Admin.</label><input type="number" name="gastos_administracion" value={formData.gastos_administracion} onChange={handleUnifiedChange} className="w-full bg-white border border-gray-100 rounded-lg py-1.5 px-3 text-sm font-bold focus:outline-none" /></div>
                                             </div>
                                         </div>
                                     </div>
@@ -835,10 +835,10 @@ const SimulationPage = () => {
 
                         <div className="pt-6 mt-6 border-t border-gray-50 text-center">
                             {userRole === 'administrador' ? (
-                                <div className="text-[9px] text-red-500 font-bold bg-red-50 p-3 rounded-xl border border-red-100 uppercase tracking-tighter inline-block px-8">Modo Lectura (Admin)</div>
+                                <div className="text-[10px] text-red-500 font-bold bg-red-50 p-3 rounded-xl border border-red-100 uppercase tracking-tighter inline-block px-8">Modo Lectura (Admin)</div>
                             ) : (
                                 <div className="flex justify-center">
-                                    <button onClick={handleSimulate} disabled={loading} className="w-full md:w-80 bg-brand-orange hover:bg-orange-600 text-white py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-brand-orange/30 transition-all flex items-center justify-center gap-3">
+                                    <button onClick={handleSimulate} disabled={loading} className="w-full md:w-80 bg-brand-orange hover:bg-orange-600 text-white py-3.5 rounded-2xl font-bold text-sm uppercase tracking-widest shadow-lg shadow-brand-orange/30 transition-all flex items-center justify-center gap-3">
                                         {loading ? "Calculando..." : <>GENERAR PROYECCIÓN <ArrowForwardIcon sx={{ fontSize: 16 }} /></>}
                                     </button>
                                 </div>
@@ -851,17 +851,17 @@ const SimulationPage = () => {
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 border-b border-white/10 pb-4">
                                 <div className="w-1.5 h-1.5 rounded-full bg-brand-blue-light animate-pulse"></div>
-                                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-blue-light">Resumen</h3>
+                                <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-brand-blue-light">Resumen</h3>
                             </div>
 
                             <div className="space-y-3 px-1">
-                                <div className="flex justify-between items-center"><p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Vivienda</p><p className="text-xs font-black">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(selectedUnit?.precio_venta || 0).toLocaleString()}</p></div>
-                                <div className="flex justify-between items-center"><p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">(-) Inicial</p><p className="text-xs font-black text-rose-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => { const p = parseFloat(selectedUnit?.precio_venta || 0); const v = parseFloat(formData.cuota_inicial || 0); return (cuotaType === 'porcentaje' ? (v / 100) * p : v).toLocaleString(); })()}</p></div>
-                                <div className="flex justify-between items-center"><p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">(-) Bono</p><p className="text-xs font-black text-emerald-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(formData.bono_bbp).toLocaleString()}</p></div>
+                                <div className="flex justify-between items-center"><p className="text-[10px] text-white/30 uppercase font-bold tracking-widest">Vivienda</p><p className="text-sm font-bold">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(selectedUnit?.precio_venta || 0).toLocaleString()}</p></div>
+                                <div className="flex justify-between items-center"><p className="text-[10px] text-white/30 uppercase font-bold tracking-widest">(-) Inicial</p><p className="text-sm font-bold text-rose-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => { const p = parseFloat(selectedUnit?.precio_venta || 0); const v = parseFloat(formData.cuota_inicial || 0); return (cuotaType === 'porcentaje' ? (v / 100) * p : v).toLocaleString(); })()}</p></div>
+                                <div className="flex justify-between items-center"><p className="text-[10px] text-white/30 uppercase font-bold tracking-widest">(-) Bono</p><p className="text-sm font-bold text-emerald-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(formData.bono_bbp).toLocaleString()}</p></div>
 
                                 <div className="pt-4 border-t border-white/10 flex justify-between items-end">
-                                    <p className="text-[10px] text-brand-blue-light uppercase font-black tracking-widest leading-none">Préstamo</p>
-                                    <p className="text-lg font-black text-brand-blue-light">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => {
+                                    <p className="text-[10px] text-brand-blue-light uppercase font-bold tracking-widest leading-none">Préstamo</p>
+                                    <p className="text-lg font-bold text-brand-blue-light">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => {
                                         const p = parseFloat(selectedUnit?.precio_venta || 0);
                                         const b = parseFloat(formData.bono_bbp || 0);
                                         const val = parseFloat(formData.cuota_inicial || 0);
@@ -877,8 +877,8 @@ const SimulationPage = () => {
                                     <div className="flex items-start gap-2">
                                         <ErrorOutlineIcon className="text-rose-400 shrink-0" sx={{ fontSize: 16 }} />
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[10px] font-black text-rose-300 uppercase tracking-widest">{serverError.titulo}</p>
-                                            <p className="text-[9px] text-rose-200 mt-1 leading-relaxed">{serverError.mensaje}</p>
+                                            <p className="text-[10px] font-bold text-rose-300 uppercase tracking-widest">{serverError.titulo}</p>
+                                            <p className="text-[10px] text-rose-200 mt-1 leading-relaxed">{serverError.mensaje}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -887,15 +887,15 @@ const SimulationPage = () => {
                             {result && !serverError && (
                                 <div className="pt-3 mt-3 border-t border-white/10 space-y-2 px-1">
                                     <div className="flex justify-between items-center text-rose-300">
-                                        <p className="text-[8px] uppercase font-black tracking-widest opacity-60">Intereses Totales</p>
-                                        <p className="text-[10px] font-black">S/ {parseFloat(result.resumen?.total_intereses || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                        <p className="text-[10px] uppercase font-bold tracking-widest opacity-60">Intereses Totales</p>
+                                        <p className="text-[10px] font-bold">S/ {parseFloat(result.resumen?.total_intereses || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                     </div>
                                     <div className="flex justify-between items-center text-amber-300 opacity-80">
-                                        <p className="text-[8px] uppercase font-bold">Comisiones</p>
-                                        <p className="text-[10px] font-black">S/ {parseFloat(result.resumen?.total_comisiones_periodicas || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                        <p className="text-[10px] uppercase font-bold">Comisiones</p>
+                                        <p className="text-[10px] font-bold">S/ {parseFloat(result.resumen?.total_comisiones_periodicas || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                     </div>
-                                    <div className="flex justify-between items-center text-white font-black pt-2 border-t border-white/5">
-                                        <p className="text-[9px] uppercase tracking-widest">Total</p>
+                                    <div className="flex justify-between items-center text-white font-bold pt-2 border-t border-white/5">
+                                        <p className="text-[10px] uppercase tracking-widest">Total</p>
                                         <p className="text-sm text-brand-blue-light">S/ {parseFloat(result.resumen?.total_pagado || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                     </div>
                                 </div>
@@ -910,7 +910,7 @@ const SimulationPage = () => {
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
                             <div className="col-span-2 md:col-span-4 flex items-center gap-2 mb-1">
                                 <div className="w-1 h-3 bg-brand-orange rounded-full"></div>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Indicadores de Rentabilidad</p>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Indicadores de Rentabilidad</p>
                             </div>
                             {[
                                 {
@@ -948,9 +948,9 @@ const SimulationPage = () => {
                                         {stat.icon}
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
-                                        <p className="text-[13px] font-black leading-none truncate mb-1" style={{ color: stat.accent }}>{stat.value}</p>
-                                        <p className="text-[8px] font-bold text-gray-300 uppercase leading-none">{stat.sublabel}</p>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
+                                        <p className="text-sm font-bold leading-none truncate mb-1" style={{ color: stat.accent }}>{stat.value}</p>
+                                        <p className="text-[10px] font-bold text-gray-300 uppercase leading-none">{stat.sublabel}</p>
                                     </div>
                                 </div>
                             ))}
@@ -958,14 +958,14 @@ const SimulationPage = () => {
 
                         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                             <div className="p-4 border-b border-gray-50 flex justify-between items-center">
-                                <h3 className="text-xs font-bold text-gray-700 uppercase tracking-tighter">Cronograma de Pagos</h3>
+                                <h3 className="text-sm font-bold text-gray-700 uppercase tracking-tighter">Cronograma de Pagos</h3>
 
                                 <div className="flex gap-2">
                                     {!result.codigo_simulacion && (
                                         <button
                                             onClick={handleSaveSimulation}
                                             disabled={saving}
-                                            className="px-3 py-1.5 bg-brand-blue text-white rounded-lg font-black text-[8px] uppercase hover:bg-brand-blue-dark shadow-sm transition-all"
+                                            className="px-3 py-1.5 bg-brand-blue text-white rounded-lg font-bold text-[10px] uppercase hover:bg-brand-blue-dark shadow-sm transition-all"
                                         >
                                             {saving ? 'Guardando...' : 'Guardar Proyección'}
                                         </button>
@@ -980,7 +980,7 @@ const SimulationPage = () => {
                                             const r = await exportToExcel(codigoSim);
                                             if (!r.success) alert(r.error);
                                         }}
-                                        className={`px-3 py-1.5 rounded-lg font-black text-[8px] uppercase transition-all ${result.codigo_simulacion ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`}
+                                        className={`px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all ${result.codigo_simulacion ? 'bg-green-50 text-green-700 hover:bg-green-100' : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`}
                                     >Excel</button>
                                     <button
                                         onClick={async () => {
@@ -992,13 +992,13 @@ const SimulationPage = () => {
                                             const r = await exportToPDF(codigoSim);
                                             if (!r.success) alert(r.error);
                                         }}
-                                        className={`px-3 py-1.5 rounded-lg font-black text-[8px] uppercase transition-all ${result.codigo_simulacion ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`}
+                                        className={`px-3 py-1.5 rounded-lg font-bold text-[10px] uppercase transition-all ${result.codigo_simulacion ? 'bg-red-50 text-red-700 hover:bg-red-100' : 'bg-gray-50 text-gray-300 cursor-not-allowed'}`}
                                     >PDF</button>
                                 </div>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
-                                    <thead className="bg-[#EEE] text-[8px] font-black text-brand-dark uppercase tracking-[0.2em] border-b-2 border-brand-blue/10">
+                                    <thead className="bg-[#EEE] text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] border-b-2 border-brand-blue/10">
                                         <tr>
                                             <th className="px-2 py-3">N°</th>
                                             <th className="px-2 py-3">Fecha Pago</th>
@@ -1011,16 +1011,16 @@ const SimulationPage = () => {
                                             <th className="px-3 py-3">Comisión</th>
                                             <th className="px-3 py-3">Portes</th>
                                             <th className="px-3 py-3">Gastos Adm.</th>
-                                            <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue font-black">Flujo</th>
+                                            <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue font-bold">Flujo</th>
                                             <th className="px-3 py-3">Saldo Final</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-50 text-[9px] font-bold text-gray-700">
+                                    <tbody className="divide-y divide-gray-50 text-[10px] font-bold text-gray-700">
                                         {result.detalles.map((d, index) => {
                                             const rowClass = d.numero_cuota === 0 ? 'bg-gray-50/50 italic opacity-60 text-gray-400' : '';
                                             return (
                                                 <tr key={index} className={`border-b border-gray-50 hover:bg-brand-blue/[0.02] transition-colors ${rowClass}`}>
-                                                    <td className="px-2 py-2.5 font-black text-brand-blue">#{d.numero_cuota}</td>
+                                                    <td className="px-2 py-2.5 font-bold text-brand-blue">#{d.numero_cuota}</td>
                                                     <td className="px-2 py-2.5 text-center text-gray-500">{new Date(d.fecha_vencimiento).toLocaleDateString('es-PE')}</td>
                                                     <td className="px-3 py-2.5 text-center text-gray-500">{d.tea ? `${parseFloat(d.tea).toFixed(2)}%` : '—'}</td>
                                                     <td className="px-3 py-2.5 text-center text-gray-500">{d.tem ? `${parseFloat(d.tem).toFixed(4)}%` : '—'}</td>
@@ -1031,8 +1031,8 @@ const SimulationPage = () => {
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.comision_periodica || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.portes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.gastos_administracion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 font-black text-brand-blue bg-brand-blue/[0.01]">S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-900 font-black">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 font-bold text-brand-blue bg-brand-blue/[0.01]">S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-900 font-bold">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                 </tr>
                                             );
                                         })}
