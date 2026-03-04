@@ -27,7 +27,7 @@ const AdvisorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Estados para el Modal del Formulario (Alta/Edición)
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [clientToEdit, setClientToEdit] = useState(null);
 
