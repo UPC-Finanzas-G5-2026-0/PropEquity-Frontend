@@ -10,7 +10,6 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 // NUEVA FUNCIÓN: Procesador inteligente de URLs de imágenes
 const getImageUrl = (fotoPath) => {
   if (!fotoPath) return null;
-  // Si ya es una URL completa (Cloudinary o externo), pasa directo
   if (fotoPath.startsWith('http')) return fotoPath;
   // Si empieza con '/', significa que es una ruta local en /public/ (Ideal para desarrollo/demos)
   if (fotoPath.startsWith('/')) return fotoPath;
