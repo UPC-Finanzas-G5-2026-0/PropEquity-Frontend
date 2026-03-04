@@ -860,8 +860,10 @@ const SimulationPage = () => {
                                             <th className="px-3 py-3">Interés</th>
                                             <th className="px-3 py-3">Amortización</th>
                                             <th className="px-3 py-3">Seg. Desgrav.</th>
-                                            <th className="px-3 py-3">Comisiones</th>
-                                            <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue">Cuota Total</th>
+                                            <th className="px-3 py-3">Comisión</th>
+                                            <th className="px-3 py-3">Portes</th>
+                                            <th className="px-3 py-3">Gastos Adm.</th>
+                                            <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue font-black">Flujo</th>
                                             <th className="px-3 py-3">Saldo Final</th>
                                         </tr>
                                     </thead>
@@ -878,7 +880,9 @@ const SimulationPage = () => {
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.comisiones || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.comision_periodica || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.portes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.gastos_administracion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 font-black text-brand-blue bg-brand-blue/[0.01]">S/ {parseFloat(d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                     <td className="px-3 py-2.5 text-gray-900 font-black">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                 </tr>
