@@ -768,30 +768,30 @@ const SimulationPage = () => {
                             {[
                                 {
                                     label: 'Tasa de Descuento',
-                                    sublabel: 'COK anual (8% fijo)',
-                                    value: `${parseFloat(result.resumen?.tasa_descuento ?? 8).toFixed(2)}%`,
+                                    sublabel: 'COK mensual (8% anual)',
+                                    value: `${parseFloat(result?.resumen?.tasa_descuento_mensual || 0).toFixed(5)}%`,
                                     accent: '#3B82F6',
                                     icon: <TrendingDownIcon sx={{ fontSize: 16 }} />
                                 },
                                 {
-                                    label: 'TIR Mensual',
-                                    sublabel: 'TIR Proyectada',
-                                    value: `${parseFloat(result.resumen?.tir || 0).toFixed(6)}%`,
+                                    label: 'TIR de la Operación',
+                                    sublabel: 'TIR Mensual Proyectada',
+                                    value: `${parseFloat(result?.resumen?.tir || 0).toFixed(5)}%`,
                                     accent: '#10B981',
                                     icon: <ShowChartIcon sx={{ fontSize: 16 }} />
                                 },
                                 {
-                                    label: 'TCEA',
+                                    label: 'TCEA de la Operación',
                                     sublabel: 'Costo Efectivo Anual',
-                                    value: `${parseFloat(result.resumen?.tcea || 0).toFixed(4)}%`,
+                                    value: `${parseFloat(result?.resumen?.tcea || 0).toFixed(5)}%`,
                                     accent: '#F97316',
                                     icon: <AccountBalanceWalletIcon sx={{ fontSize: 16 }} />
                                 },
                                 {
-                                    label: 'VAN',
+                                    label: 'VAN Operación',
                                     sublabel: 'Valor Actual Neto',
-                                    value: `S/ ${parseFloat(result.resumen?.van || 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                                    accent: parseFloat(result.resumen?.van || 0) >= 0 ? '#10B981' : '#EF4444',
+                                    value: `S/ ${parseFloat(result?.resumen?.van || 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}`,
+                                    accent: parseFloat(result?.resumen?.van || 0) >= 0 ? '#10B981' : '#EF4444',
                                     icon: <AccountBalanceIcon sx={{ fontSize: 16 }} />
                                 }
                             ].map((stat, i) => (
