@@ -133,8 +133,15 @@ const RegisterPage = () => {
     } catch (err) {
       console.error(err);
       setLoading(false);
-      if (err.response?.status === 500) {
-        setError('Error interno del servidor. Es muy probable que este DNI o Correo ya existan en nuestra base de datos.');
+      const serverDetail = err.response?.data?.detail;
+
+      if (typeof serverDetail === 'string') {
+        setError(serverDetail);
+      } else if (Array.isArray(serverDetail)) {
+        // Para errores de validación de Pydantic/FastAPI
+        setError(serverDetail.map(e => e.msg).join(', '));
+      } else if (err.response?.status === 500) {
+        setError('Error interno del servidor. Es probable que este DNI o Correo ya existan en nuestra base de datos.');
       } else {
         setError('No pudimos crear tu cuenta. Por favor, verifica tus datos e intenta de nuevo.');
       }
