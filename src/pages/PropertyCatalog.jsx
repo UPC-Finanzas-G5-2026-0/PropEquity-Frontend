@@ -7,7 +7,7 @@ import { getUnits, toggleUnitFavorite } from '../services/unitService';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
-// NUEVA FUNCIÓN: Procesador inteligente de URLs de imágenes
+
 const getImageUrl = (fotoPath) => {
   if (!fotoPath) return null;
   if (fotoPath.startsWith('http')) return fotoPath;
