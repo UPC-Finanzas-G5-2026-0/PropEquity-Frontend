@@ -19,7 +19,7 @@ const getImageUrl = (fotoPath) => {
     return `${API_URL}${fotoPath}`;
 };
 
-// Todos los distritos de Lima Metropolitana
+
 const DISTRITOS_LIMA = [
     'Ate', 'Barranco', 'Breña', 'Carabayllo', 'Cercado de Lima', 'Chaclacayo', 'Chorrillos',
     'Cieneguilla', 'Comas', 'El Agustino', 'Independencia', 'Jesús María', 'La Molina',
