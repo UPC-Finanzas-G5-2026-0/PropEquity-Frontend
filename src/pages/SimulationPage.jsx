@@ -884,22 +884,43 @@ const SimulationPage = () => {
                                 </div>
                             )}
 
-                            {result && !serverError && (
-                                <div className="pt-3 mt-3 border-t border-white/10 space-y-2 px-1">
-                                    <div className="flex justify-between items-center text-rose-300">
-                                        <p className="text-[10px] uppercase font-black tracking-widest opacity-60">Intereses Totales</p>
-                                        <p className="text-[10px] font-black">S/ {parseFloat(result.resumen?.total_intereses || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                            {result && !serverError && (() => {
+                                const parseVal = (val) => parseFloat(val || 0);
+                                const totalIntereses = result.detalles?.reduce((acc, d) => acc + parseVal(d.interes), 0) || 0;
+                                const totalAmortizacion = result.detalles?.reduce((acc, d) => acc + parseVal(d.amortizacion), 0) || 0;
+                                const totalSeguro = result.detalles?.reduce((acc, d) => acc + parseVal(d.seguro_desgravamen || d.seguro), 0) || 0;
+                                const totalComisiones = result.detalles?.reduce((acc, d) => acc + parseVal(d.comision_periodica), 0) || 0;
+                                const totalPortesYAdm = result.detalles?.reduce((acc, d) => acc + parseVal(d.portes) + parseVal(d.gastos_administracion), 0) || 0;
+
+                                return (
+                                    <div className="pt-3 mt-3 border-t border-white/10 space-y-2 px-1">
+                                        <div className="flex justify-between items-center text-rose-300">
+                                            <p className="text-[10px] uppercase font-black tracking-widest opacity-60">Intereses Totales</p>
+                                            <p className="text-[10px] font-black">S/ {totalIntereses.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                        </div>
+                                        <div className="flex justify-between items-center text-violet-300 opacity-80">
+                                            <p className="text-[10px] uppercase font-black tracking-widest">Amort. del Capital</p>
+                                            <p className="text-[10px] font-black">S/ {totalAmortizacion.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                        </div>
+                                        <div className="flex justify-between items-center text-teal-300 opacity-80">
+                                            <p className="text-[10px] uppercase font-black tracking-widest">Seg. Desgravamen</p>
+                                            <p className="text-[10px] font-black">S/ {totalSeguro.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                        </div>
+                                        <div className="flex justify-between items-center text-amber-300 opacity-80">
+                                            <p className="text-[10px] uppercase font-black tracking-widest">Comisiones Periód.</p>
+                                            <p className="text-[10px] font-black">S/ {totalComisiones.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                        </div>
+                                        <div className="flex justify-between items-center text-gray-300 opacity-80">
+                                            <p className="text-[10px] uppercase font-black tracking-widest">Portes / Gast. Adm.</p>
+                                            <p className="text-[10px] font-black">S/ {totalPortesYAdm.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                        </div>
+                                        <div className="flex justify-between items-center text-white font-black pt-2 border-t border-white/5">
+                                            <p className="text-[10px] uppercase tracking-widest">Total</p>
+                                            <p className="text-sm text-brand-blue-light font-black">S/ {parseFloat(result.resumen?.total_pagado || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                        </div>
                                     </div>
-                                    <div className="flex justify-between items-center text-amber-300 opacity-80">
-                                        <p className="text-[10px] uppercase font-black">Comisiones</p>
-                                        <p className="text-[10px] font-black">S/ {parseFloat(result.resumen?.total_comisiones_periodicas || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                                    </div>
-                                    <div className="flex justify-between items-center text-white font-black pt-2 border-t border-white/5">
-                                        <p className="text-[10px] uppercase tracking-widest">Total</p>
-                                        <p className="text-sm text-brand-blue-light font-black">S/ {parseFloat(result.resumen?.total_pagado || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                                    </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
