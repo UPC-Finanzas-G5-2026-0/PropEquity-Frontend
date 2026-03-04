@@ -125,10 +125,13 @@ export const getIFIRules = async () => {
 };
 
 // Obtener IFIs disponibles para un monto
-export const getAvailableIFIs = async (montoPrestamo) => {
+export const getAvailableIFIs = async (monto, tieneDeudor = false) => {
     try {
         const response = await api.get('/simulator/ifis-disponibles', {
-            params: { monto_prestamo: montoPrestamo }
+            params: {
+                monto: monto,
+                tiene_deudor_solidario: tieneDeudor
+            }
         });
         return { success: true, data: response.data };
     } catch (error) {

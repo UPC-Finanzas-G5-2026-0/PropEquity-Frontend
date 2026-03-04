@@ -59,12 +59,24 @@ const SimulationPage = () => {
         es_propietario_vivienda: user?.es_propietario_vivienda || false,
         ha_recibido_apoyo: user?.ha_recibido_apoyo || false,
         tiene_credito_activo: user?.tiene_credito_activo || false,
+        tiene_deudor_solidario: user?.tiene_deudor_solidario || false,
         fecha_inicio_prestamo: new Date().toISOString().split('T')[0]
     });
 
-    const [temValue, setTemValue] = useState('--');
-    const [bbpData, setBbpData] = useState([]);
     const [ifiRules, setIfiRules] = useState({});
+
+    // Sincronizar estado de deudor solidario desde el perfil del usuario
+    useEffect(() => {
+        if (user && userRole === 'cliente') {
+            setFormData(prev => ({
+                ...prev,
+                tiene_deudor_solidario: user.tiene_deudor_solidario || false,
+                es_propietario_vivienda: user.es_propietario_vivienda || false,
+                ha_recibido_apoyo: user.ha_recibido_apoyo || false,
+                tiene_credito_activo: user.tiene_credito_activo || false
+            }));
+        }
+    }, [user, userRole]);
 
     // Cargar rangos BBP desde backend
     useEffect(() => {
@@ -180,6 +192,8 @@ const SimulationPage = () => {
     const [prospectStatus, setProspectStatus] = useState('');
     const [prospectIFM, setProspectIFM] = useState(0);
     const [isProspectMancomunado, setIsProspectMancomunado] = useState(false);
+    const [temValue, setTemValue] = useState('--');
+    const [bbpData, setBbpData] = useState([]);
 
     // Carga de Simulación Guardada
     useEffect(() => {
@@ -439,7 +453,8 @@ const SimulationPage = () => {
                     [2, 3].includes(parseInt(user?.codigo_estado_civil || user?.rol_rel?.codigo_estado_civil || 0)) ||
                     parseFloat(user?.ingreso_conyuge || 0) > 0 ||
                     !!user?.nombre_conyuge ||
-                    user?.tiene_deudor_solidario === true
+                    user?.tiene_deudor_solidario === true ||
+                    formData.tiene_deudor_solidario === true
                 );
 
             setFormData(prev => ({
@@ -449,7 +464,7 @@ const SimulationPage = () => {
                 seguro_desgravamen: isMancomunado ? config.seguro_mancomunado : config.seguro_individual
             }));
         }
-    }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp, userRole, isProspectMancomunado, user?.ingreso_conyuge, user?.nombre_conyuge, user?.codigo_estado_civil, user?.tiene_deudor_solidario, ifiRules]);
+    }, [formData.ifi_seleccionada, formData.cuota_inicial, cuotaType, selectedUnit, formData.bono_bbp, userRole, isProspectMancomunado, user?.ingreso_conyuge, user?.nombre_conyuge, user?.codigo_estado_civil, user?.tiene_deudor_solidario, formData.tiene_deudor_solidario, ifiRules]);
 
     const handleSimulate = async () => {
         if (userRole === 'administrador') {
@@ -573,6 +588,7 @@ const SimulationPage = () => {
                 codigo_cliente: userRole === 'cliente' ? userId : null,
                 codigo_asesor: userRole === 'asesor' ? userId : null,
                 codigo_prospecto: userRole === 'asesor' ? (formData.codigo_prospecto ? parseInt(formData.codigo_prospecto) : null) : null,
+                tiene_deudor_solidario: formData.tiene_deudor_solidario,
                 fecha_inicio_prestamo: formData.fecha_inicio_prestamo
             };
             setLastPayload(payload);
@@ -765,6 +781,36 @@ const SimulationPage = () => {
                                                     <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="es_propietario_vivienda" checked={formData.es_propietario_vivienda} onChange={(e) => setFormData(prev => ({ ...prev, es_propietario_vivienda: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[10px] font-bold text-gray-500 uppercase">¿Es Propietario?</span></label>
                                                     <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="ha_recibido_apoyo" checked={formData.ha_recibido_apoyo} onChange={(e) => setFormData(prev => ({ ...prev, ha_recibido_apoyo: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[10px] font-bold text-gray-500 uppercase">¿Apoyo FMV previo?</span></label>
                                                     <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="tiene_credito_activo" checked={formData.tiene_credito_activo} onChange={(e) => setFormData(prev => ({ ...prev, tiene_credito_activo: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[10px] font-bold text-gray-500 uppercase">¿Crédito Activo?</span></label>
+                                                    {(() => {
+                                                        const isForcedByProfile = userRole === 'cliente' && (
+                                                            [2, 3].includes(parseInt(user?.codigo_estado_civil || 0)) ||
+                                                            user?.tiene_deudor_solidario === true ||
+                                                            parseFloat(user?.ingreso_conyuge || 0) > 0
+                                                        );
+                                                        const isForcedByProspect = userRole === 'asesor' && isProspectMancomunado;
+
+                                                        if (isForcedByProfile || isForcedByProspect) {
+                                                            return (
+                                                                <div className="flex items-center gap-2 p-1.5 bg-brand-orange/10 rounded-lg border border-brand-orange/20 animate-in fade-in duration-300">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-brand-orange animate-pulse"></div>
+                                                                    <span className="text-[9px] font-black text-brand-orange uppercase">Seguro Mancomunado Activo</span>
+                                                                </div>
+                                                            );
+                                                        }
+
+                                                        return (
+                                                            <label className="flex items-center gap-2 cursor-pointer mt-0.5">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    name="tiene_deudor_solidario"
+                                                                    checked={formData.tiene_deudor_solidario}
+                                                                    onChange={(e) => setFormData(prev => ({ ...prev, tiene_deudor_solidario: e.target.checked }))}
+                                                                    className="w-3 h-3 text-brand-blue"
+                                                                />
+                                                                <span className="text-[10px] font-bold text-brand-orange uppercase">¿Seguro Mancomunado?</span>
+                                                            </label>
+                                                        );
+                                                    })()}
                                                 </div>
                                                 {(formData.es_propietario_vivienda || formData.ha_recibido_apoyo || formData.tiene_credito_activo) && (
                                                     <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-100 rounded-lg mt-1 animate-in zoom-in-95 duration-200">

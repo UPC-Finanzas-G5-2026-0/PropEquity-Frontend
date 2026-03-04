@@ -85,7 +85,20 @@ const ProfilePage = () => {
             const response = await updateProfile(formData.id, payload);
             if (response.success) {
                 if (updateUser) {
-                    updateUser({ nombres: formData.nombres, apellidos: formData.apellidos, names: `${formData.nombres} ${formData.apellidos}`, dni: formData.dni, telefono: formData.telefono, ingreso_mensual: formData.ingreso_mensual });
+                    updateUser({
+                        nombres: formData.nombres,
+                        apellidos: formData.apellidos,
+                        names: `${formData.nombres} ${formData.apellidos}`,
+                        dni: formData.dni,
+                        telefono: formData.telefono,
+                        ingreso_mensual: formData.ingreso_mensual,
+                        tiene_deudor_solidario: formData.tiene_deudor_solidario,
+                        codigo_estado_civil: formData.codigo_estado_civil,
+                        es_propietario_vivienda: formData.es_propietario_vivienda,
+                        ha_recibido_apoyo: formData.ha_recibido_apoyo,
+                        nombre_conyuge: formData.nombre_conyuge,
+                        ingreso_conyuge: formData.ingreso_conyuge
+                    });
                 }
                 setIsEditing(false);
                 alert("Perfil actualizado correctamente");

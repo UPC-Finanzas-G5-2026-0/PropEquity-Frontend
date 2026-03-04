@@ -30,9 +30,8 @@ export const AuthProvider = ({ children }) => {
       const userData = {
         token: data.access_token,
         role: data.role, // 'Administrador', 'Asesor', 'Cliente'
-        // codigo_usuario es el campo que devuelve el backend en login/signup
-        id: data.codigo_usuario || data.user_id || data.id,
-        codigo_usuario: data.codigo_usuario || data.user_id || data.id,
+        id: data.codigo_usuario || data.id,
+        codigo_usuario: data.codigo_usuario || data.id,
         names: `${data.nombres} ${data.apellidos}`,
         nombres: data.nombres,
         apellidos: data.apellidos,
@@ -41,10 +40,19 @@ export const AuthProvider = ({ children }) => {
         telefono: data.telefono,
         ingreso_mensual: data.ingreso_mensual,
         ingreso_conyuge: data.ingreso_conyuge || 0,
-        codigo_tipo_ingreso: data.codigo_tipo_ingreso || 1,
+        codigo_tipo_ingreso: data.codigo_tipo_ingreso,
         meses_ahorro: data.meses_ahorro || 0,
-        es_propietario_vivienda: data.es_propietario_vivienda,
-        ha_recibido_apoyo: data.ha_recibido_apoyo || false
+        tiene_deudor_solidario: data.tiene_deudor_solidario || false,
+        residencia: data.residencia || 'Peruano',
+        codigo_estado_civil: data.codigo_estado_civil,
+        nombre_conyuge: data.nombre_conyuge,
+        doc_conyuge: data.doc_conyuge,
+        conyuge_propietario: data.conyuge_propietario || false,
+        es_propietario_vivienda: data.es_propietario_vivienda || false,
+        ha_recibido_apoyo: data.ha_recibido_apoyo || false,
+        tiene_credito_activo: data.tiene_credito_activo || false,
+        hijos_menores_propietarios: data.hijos_menores_propietarios || false,
+        cantidad_creditos_fmv: data.cantidad_creditos_fmv || 0
       };
       localStorage.setItem('token', userData.token);
       localStorage.setItem('user', JSON.stringify(userData));
