@@ -10,7 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { createUnit, getUnits, updateUnit, deleteUnit } from '../services/unitService';
 import CustomSelect from '../components/CustomSelect';
 
-// NUEVA FUNCIÓN: Procesador inteligente de URLs de imágenes
+
 const getImageUrl = (fotoPath) => {
     if (!fotoPath) return null; // Si no hay foto, retorna null para que tu código muestre el ícono de Location
     if (fotoPath.startsWith('http')) return fotoPath; // Si es de Cloudinary, pasa directo
