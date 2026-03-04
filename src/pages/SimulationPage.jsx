@@ -1037,41 +1037,65 @@ const SimulationPage = () => {
                                 <table className="w-full text-left">
                                     <thead className="bg-[#EEE] text-[10px] font-bold text-brand-dark uppercase tracking-[0.2em] border-b-2 border-brand-blue/10">
                                         <tr>
-                                            <th className="px-2 py-3">N°</th>
-                                            <th className="px-2 py-3">Fecha Pago</th>
-                                            <th className="px-3 py-3">TEA%</th>
-                                            <th className="px-3 py-3">TEM%</th>
-                                            <th className="px-3 py-3">Saldo Inicial</th>
-                                            <th className="px-3 py-3">Interés</th>
-                                            <th className="px-3 py-3">Cuota</th>
-                                            <th className="px-3 py-3">Amortización</th>
-                                            <th className="px-3 py-3">Seg. Desgrav.</th>
-                                            <th className="px-3 py-3">Comisión</th>
-                                            <th className="px-3 py-3">Portes</th>
-                                            <th className="px-3 py-3">Gastos Adm.</th>
-                                            <th className="px-3 py-3">Saldo Final</th>
-                                            <th className="px-3 py-3 bg-brand-blue/5 text-brand-blue font-bold">Flujo</th>
+                                            <th className="px-4 py-4 whitespace-nowrap">N°</th>
+                                            <th className="px-4 py-4 whitespace-nowrap text-center">Fecha Pago</th>
+                                            <th className="px-4 py-4 whitespace-nowrap text-center">TEA%</th>
+                                            <th className="px-4 py-4 whitespace-nowrap text-center">TEM%</th>
+                                            <th className="px-4 py-4 whitespace-nowrap">Saldo Inicial</th>
+                                            <th className="px-4 py-4 whitespace-nowrap">Interés</th>
+                                            <th className="px-4 py-4 whitespace-nowrap">Cuota</th>
+                                            <th className="px-4 py-4 whitespace-nowrap">Amortización</th>
+                                            <th className="px-4 py-4 whitespace-nowrap">Seg. Desgrav.</th>
+                                            <th className="px-4 py-4 whitespace-nowrap">Comisión</th>
+                                            <th className="px-4 py-4 whitespace-nowrap">Portes</th>
+                                            <th className="px-4 py-4 whitespace-nowrap">Gastos Adm.</th>
+                                            <th className="px-4 py-4 whitespace-nowrap">Saldo Final</th>
+                                            <th className="px-4 py-4 whitespace-nowrap bg-brand-blue/5 text-brand-blue font-bold">Flujo</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-50 text-[10px] font-bold text-gray-700">
                                         {result.detalles.map((d, index) => {
-                                            const rowClass = d.numero_cuota === 0 ? 'bg-gray-50/50 italic opacity-60 text-gray-400' : '';
+                                            const numMesesGracia = parseInt(result?.meses_gracia || formData.meses_gracia || 0);
+                                            const tipoGraciaString = String(result?.tipo_gracia || '');
+                                            const validTipoGracia = (tipoGraciaString === 'Parcial' || tipoGraciaString === 'Total')
+                                                ? tipoGraciaString
+                                                : (formData.codigo_tipo_gracia === '2' ? 'Parcial' : formData.codigo_tipo_gracia === '3' ? 'Total' : 'Ninguno');
+
+                                            const isGraciaParcial = validTipoGracia === 'Parcial' && d.numero_cuota > 0 && d.numero_cuota <= numMesesGracia;
+                                            const isGraciaTotal = validTipoGracia === 'Total' && d.numero_cuota > 0 && d.numero_cuota <= numMesesGracia;
+
+                                            let rowClass = 'hover:bg-brand-blue/[0.02]';
+                                            let graceBadge = null;
+
+                                            if (d.numero_cuota === 0) {
+                                                rowClass = 'bg-gray-50/50 italic opacity-60 text-gray-400';
+                                            } else if (isGraciaParcial) {
+                                                rowClass = 'bg-blue-50/80 hover:bg-blue-100/60';
+                                                graceBadge = <span className="ml-2 text-[8px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">Parcial</span>;
+                                            } else if (isGraciaTotal) {
+                                                rowClass = 'bg-amber-50/80 hover:bg-amber-100/60';
+                                                graceBadge = <span className="ml-2 text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-tighter">Total</span>;
+                                            }
+
                                             return (
-                                                <tr key={index} className={`border-b border-gray-50 hover:bg-brand-blue/[0.02] transition-colors ${rowClass}`}>
-                                                    <td className="px-2 py-2.5 font-bold text-brand-blue">#{d.numero_cuota}</td>
-                                                    <td className="px-2 py-2.5 text-center text-gray-500">{new Date(d.fecha_vencimiento).toLocaleDateString('es-PE')}</td>
-                                                    <td className="px-3 py-2.5 text-center text-gray-500">{d.tea ? `${parseFloat(d.tea).toFixed(2)}%` : '—'}</td>
-                                                    <td className="px-3 py-2.5 text-center text-gray-500">{d.tem ? `${parseFloat(d.tem).toFixed(4)}%` : '—'}</td>
-                                                    <td className="px-3 py-2.5 text-gray-600 font-medium">S/ {parseFloat(d.saldo_inicial || d.saldo_inicio || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.cuota || d.cuota_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.comision_periodica || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.portes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-400">S/ {parseFloat(d.gastos_administracion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 text-gray-900 font-medium">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                                    <td className="px-3 py-2.5 font-bold text-brand-blue bg-brand-blue/[0.01]">S/ {parseFloat(d.flujo || d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                <tr key={index} className={`border-b border-gray-50 transition-colors ${rowClass}`}>
+                                                    <td className="px-4 py-3 font-bold text-brand-blue whitespace-nowrap">
+                                                        #{d.numero_cuota}
+                                                        {graceBadge}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center text-gray-500 whitespace-nowrap">{new Date(d.fecha_vencimiento).toLocaleDateString('es-PE')}</td>
+                                                    <td className="px-4 py-3 text-center text-gray-500 whitespace-nowrap">{d.tea ? `${parseFloat(d.tea).toFixed(2)}%` : '—'}</td>
+                                                    <td className="px-4 py-3 text-center text-gray-500 whitespace-nowrap">{d.tem ? `${parseFloat(d.tem).toFixed(4)}%` : '—'}</td>
+                                                    <td className="px-4 py-3 text-gray-600 font-medium whitespace-nowrap">S/ {parseFloat(d.saldo_inicial || d.saldo_inicio || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">S/ {parseFloat(d.interes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">S/ {parseFloat(d.cuota || d.cuota_total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">S/ {parseFloat(d.amortizacion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">S/ {parseFloat(d.seguro_desgravamen || d.seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">S/ {parseFloat(d.comision_periodica || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">S/ {parseFloat(d.portes || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">S/ {parseFloat(d.gastos_administracion || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-4 py-3 text-gray-900 font-medium whitespace-nowrap">S/ {parseFloat(d.saldo_final || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                    <td className="px-4 py-3 font-bold text-brand-blue bg-brand-blue/[0.01] whitespace-nowrap">S/ {parseFloat(d.flujo || d.cuota_total || d.cuota || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                                 </tr>
                                             );
                                         })}
