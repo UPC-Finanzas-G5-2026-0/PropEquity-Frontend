@@ -554,13 +554,14 @@ const SimulationPage = () => {
                 </header>
 
                 <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start mb-6">
+                    {/* FORMULARIO PRINCIPAL (9 COLUMNAS) */}
                     <div className="xl:col-span-9 bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-start">
-                            {/* ── COLUMNA 1: PROPIEDAD Y PLAZO ── */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {/* ── COLUMNA 1: VIVIENDA Y PLAZO ── */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
-                                    <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
-                                    Propiedad y Plazo
+                                    <div className="w-[3px] h-3.5 bg-brand-blue"></div>
+                                    Vivienda y Plazo
                                 </h3>
                                 {userRole === 'asesor' && (
                                     <div className="bg-brand-blue/5 p-3 rounded-xl border border-brand-blue/10 mb-2">
@@ -594,11 +595,11 @@ const SimulationPage = () => {
                                 </div>
                             </div>
 
-                            {/* ── COLUMNA 2: APORTES E INCENTIVOS ── */}
+                            {/* ── COLUMNA 2: INCENTIVOS Y ENTIDAD ── */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
-                                    <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
-                                    Aportes e Incentivos
+                                    <div className="w-[3px] h-3.5 bg-brand-blue"></div>
+                                    Incentivos y Entidad
                                 </h3>
                                 <section className="space-y-4">
                                     <div>
@@ -612,171 +613,168 @@ const SimulationPage = () => {
                                         <input type="number" name="cuota_inicial" value={formData.cuota_inicial} onChange={handleChange} className="w-full bg-gray-50/50 rounded-xl py-2 px-3 focus:outline-none border border-gray-100 font-black text-gray-900 text-sm" />
                                     </div>
 
-                                    <div className="space-y-3 bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
-                                        <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center border-b border-gray-200 pb-2 mb-2">Modalidad de Bono</h4>
-                                        {(() => {
-                                            if (formData.codigo_tipo_tasa === '1') return <div className="text-center text-[8px] text-gray-400 p-2 uppercase">Cambie a TEA para usar bonos</div>;
-                                            const p = parseFloat(selectedUnit?.precio_venta || 0);
-                                            const mod = parseInt(selectedUnit?.codigo_modalidad || 0);
-                                            const isRestricted = formData.ha_recibido_apoyo || formData.tiene_credito_activo || formData.es_propietario_vivienda;
-                                            if (mod === 3 || isRestricted) {
-                                                let msg = "Sin BBP (No califica)";
-                                                if (formData.es_propietario_vivienda) msg = "Ya es propietario (No califica)";
-                                                else if (formData.ha_recibido_apoyo) msg = "Ya recibió apoyo (No califica)";
-                                                else if (formData.tiene_credito_activo) msg = "Tiene crédito activo (No califica)";
-                                                return <p className="text-[8px] font-bold text-red-500 p-2 uppercase text-center">{msg}</p>;
-                                            }
-                                            if (p > 362100) return <p className="text-[8px] font-bold text-amber-500 p-2 uppercase text-center">R5: Solo Bono Integrador</p>;
+                                    <div className="p-3 bg-gray-50/50 rounded-2xl border border-gray-100">
+                                        <div className="space-y-4">
+                                            <div className="bg-white p-3 rounded-xl border border-gray-100">
+                                                <h4 className="text-[10px] font-black text-gray-500 uppercase tracking-widest text-center border-b border-gray-100 pb-2 mb-3">Modalidad de Bono</h4>
+                                                {(() => {
+                                                    if (formData.codigo_tipo_tasa === '1') return <div className="text-center text-[8px] text-gray-400 p-2 uppercase">Cambie a TEA para usar bonos</div>;
+                                                    const p = parseFloat(selectedUnit?.precio_venta || 0);
+                                                    const mod = parseInt(selectedUnit?.codigo_modalidad || 0);
+                                                    const isRestricted = formData.ha_recibido_apoyo || formData.tiene_credito_activo || formData.es_propietario_vivienda;
+                                                    if (mod === 3 || isRestricted) {
+                                                        let msg = "Sin BBP (No califica)";
+                                                        if (formData.es_propietario_vivienda) msg = "Ya es propietario (No califica)";
+                                                        else if (formData.ha_recibido_apoyo) msg = "Ya recibió apoyo (No califica)";
+                                                        else if (formData.tiene_credito_activo) msg = "Tiene crédito activo (No califica)";
+                                                        return <p className="text-[8px] font-bold text-red-500 p-2 uppercase text-center">{msg}</p>;
+                                                    }
+                                                    if (p > 362100) return <p className="text-[8px] font-bold text-amber-500 p-2 uppercase text-center">R5: Solo Bono Integrador</p>;
 
-                                            const isSostenible = selectedUnit?.es_sostenible || false;
-                                            const opciones = isSostenible
-                                                ? [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Sostenible', sinBono: false, sostenible: true, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: true, integrador: true }]
-                                                : [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Tradicional', sinBono: false, sostenible: false, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: false, integrador: true }];
-                                            const activeIdx = formData.sin_bono ? 0 : formData.es_integrador ? 2 : 1;
-                                            return (
-                                                <div className="space-y-2">
-                                                    {opciones.map((op, idx) => (
-                                                        <button key={op.label} type="button" onClick={() => setFormData(prev => ({ ...prev, sin_bono: op.sinBono, vivienda_sostenible: op.sostenible, es_integrador: op.integrador, codigo_tipo_tasa: '2' }))} className={`w-full py-1.5 rounded-lg text-[9px] font-black uppercase text-left px-3 ${activeIdx === idx ? 'bg-brand-blue text-white' : 'text-gray-400 hover:bg-gray-100/50'}`}>{op.label}</button>
-                                                    ))}
-                                                    {formData.es_integrador && (
-                                                        <div className="pt-2 animate-in fade-in duration-300">
-                                                            <CustomSelect label="Categoría Integrador" value={formData.categoria_integrador} onChange={(val) => handleCustomChange('categoria_integrador', val)} options={[
-                                                                { id: 'Menores ingresos', label: 'Menores Ingresos' },
-                                                                { id: 'Adulto mayor', label: 'Adulto Mayor (>60 años)' },
-                                                                { id: 'Discapacidad', label: 'Persona con Discapacidad' },
-                                                                { id: 'Desplazado', label: 'Desplazados / VRAEM' },
-                                                                { id: 'Migrante retornado', label: 'Migrante Retornado' }
-                                                            ]} />
-                                                            {formData.categoria_integrador === 'Menores ingresos' && (() => {
-                                                                const ifm = userRole === 'asesor' ? parseFloat(prospectIFM || 0) : (parseFloat(user?.ingreso_mensual || 0) + parseFloat(user?.ingreso_conyuge || 0));
-                                                                if (ifm > 4746) {
-                                                                    return (
-                                                                        <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-100 rounded-lg mt-2 animate-in slide-in-from-top-1 duration-200">
-                                                                            <InfoOutlinedIcon className="text-amber-600 shrink-0" sx={{ fontSize: 12 }} />
-                                                                            <p className="text-[8px] text-amber-700 font-bold leading-tight uppercase">
-                                                                                Ingreso Familiar (S/ {ifm.toLocaleString()}) excede el límite de S/ 4,746 para esta categoría.
-                                                                            </p>
-                                                                        </div>
-                                                                    );
-                                                                }
-                                                                return null;
-                                                            })()}
+                                                    const isSostenible = selectedUnit?.es_sostenible || false;
+                                                    const opciones = isSostenible
+                                                        ? [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Sostenible', sinBono: false, sostenible: true, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: true, integrador: true }]
+                                                        : [{ label: 'Sin Bono', sinBono: true, sostenible: false, integrador: false }, { label: 'Tradicional', sinBono: false, sostenible: false, integrador: false }, { label: 'Integrador', sinBono: false, sostenible: false, integrador: true }];
+                                                    const activeIdx = formData.sin_bono ? 0 : formData.es_integrador ? 2 : 1;
+                                                    return (
+                                                        <div className="space-y-2">
+                                                            {opciones.map((op, idx) => (
+                                                                <button key={op.label} type="button" onClick={() => setFormData(prev => ({ ...prev, sin_bono: op.sinBono, vivienda_sostenible: op.sostenible, es_integrador: op.integrador, codigo_tipo_tasa: '2' }))} className={`w-full py-1.5 rounded-lg text-[9px] font-black uppercase text-left px-3 ${activeIdx === idx ? 'bg-brand-blue text-white' : 'text-gray-400 hover:bg-gray-100/50'}`}>{op.label}</button>
+                                                            ))}
+                                                            {formData.es_integrador && (
+                                                                <div className="pt-2 animate-in fade-in duration-300">
+                                                                    <CustomSelect label="Categoría" value={formData.categoria_integrador} onChange={(val) => handleCustomChange('categoria_integrador', val)} options={[
+                                                                        { id: 'Menores ingresos', label: 'Menores Ingresos' },
+                                                                        { id: 'Adulto mayor', label: 'Adulto Mayor (>60)' },
+                                                                        { id: 'Discapacidad', label: 'Discapacidad' },
+                                                                        { id: 'Desplazado', label: 'Desplazados' },
+                                                                        { id: 'Migrante retornado', label: 'Migrante' }
+                                                                    ]} />
+                                                                    {formData.categoria_integrador === 'Menores ingresos' && (() => {
+                                                                        const ifm = userRole === 'asesor' ? parseFloat(prospectIFM || 0) : (parseFloat(user?.ingreso_mensual || 0) + parseFloat(user?.ingreso_conyuge || 0));
+                                                                        if (ifm > 4746) {
+                                                                            return (
+                                                                                <div className="flex items-start gap-2 p-2 bg-amber-50 border border-amber-100 rounded-lg mt-2 animate-in slide-in-from-top-1 duration-200">
+                                                                                    <InfoOutlinedIcon className="text-amber-600 shrink-0" sx={{ fontSize: 12 }} />
+                                                                                    <p className="text-[8px] text-amber-700 font-bold leading-tight uppercase">
+                                                                                        Ingreso Familiar (S/ {ifm.toLocaleString()}) excede el límite de S/ 4,746 para esta categoría.
+                                                                                    </p>
+                                                                                </div>
+                                                                            );
+                                                                        }
+                                                                        return null;
+                                                                    })()}
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    )}
+                                                    );
+                                                })()}
+                                            </div>
+
+                                            <div className="p-3 bg-white rounded-xl border border-gray-100 space-y-2">
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest text-center border-b border-gray-100 pb-1">Declaraciones FMV</p>
+                                                <div className="grid grid-cols-1 gap-1.5">
+                                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="es_propietario_vivienda" checked={formData.es_propietario_vivienda} onChange={(e) => setFormData(prev => ({ ...prev, es_propietario_vivienda: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[9px] font-bold text-gray-500 uppercase">¿Es Propietario?</span></label>
+                                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="ha_recibido_apoyo" checked={formData.ha_recibido_apoyo} onChange={(e) => setFormData(prev => ({ ...prev, ha_recibido_apoyo: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[9px] font-bold text-gray-500 uppercase">¿Apoyo FMV previo?</span></label>
+                                                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="tiene_credito_activo" checked={formData.tiene_credito_activo} onChange={(e) => setFormData(prev => ({ ...prev, tiene_credito_activo: e.target.checked }))} className="w-3 h-3 text-brand-blue" /><span className="text-[9px] font-bold text-gray-500 uppercase">¿Crédito Activo?</span></label>
                                                 </div>
-                                            );
-                                        })()}
+                                                {(formData.es_propietario_vivienda || formData.ha_recibido_apoyo || formData.tiene_credito_activo) && (
+                                                    <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-100 rounded-lg mt-1 animate-in zoom-in-95 duration-200">
+                                                        <ErrorOutlineIcon className="text-red-500 shrink-0" sx={{ fontSize: 12 }} />
+                                                        <p className="text-[8px] text-red-600 font-bold leading-tight uppercase">
+                                                            Restricción BBP aplicada: El perfil no califica para bonos estatales según normativa FMV.
+                                                        </p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-100 space-y-3">
-                                        <p className="text-[9px] font-black text-amber-700 uppercase tracking-widest text-center border-b border-amber-200 pb-1">Declaraciones FMV</p>
-                                        <label className="flex items-center gap-2 cursor-pointer group">
-                                            <input type="checkbox" name="es_propietario_vivienda" checked={formData.es_propietario_vivienda} onChange={(e) => setFormData(prev => ({ ...prev, es_propietario_vivienda: e.target.checked }))} className="w-3 h-3 text-brand-blue" />
-                                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter group-hover:text-gray-700">¿Es Propietario?</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer group">
-                                            <input type="checkbox" name="ha_recibido_apoyo" checked={formData.ha_recibido_apoyo} onChange={(e) => setFormData(prev => ({ ...prev, ha_recibido_apoyo: e.target.checked }))} className="w-3 h-3 text-brand-blue" />
-                                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter group-hover:text-gray-700">¿Recibió Apoyo previo?</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer group">
-                                            <input type="checkbox" name="tiene_credito_activo" checked={formData.tiene_credito_activo} onChange={(e) => setFormData(prev => ({ ...prev, tiene_credito_activo: e.target.checked }))} className="w-3 h-3 text-brand-blue" />
-                                            <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter group-hover:text-gray-700">¿Tiene Crédito FMV activo?</span>
-                                        </label>
-                                        {(formData.es_propietario_vivienda || formData.ha_recibido_apoyo || formData.tiene_credito_activo) && (
-                                            <div className="flex items-start gap-2 p-2 bg-red-50 border border-red-100 rounded-lg mt-1 animate-in zoom-in-95 duration-200">
-                                                <ErrorOutlineIcon className="text-red-500 shrink-0" sx={{ fontSize: 12 }} />
-                                                <p className="text-[8px] text-red-600 font-bold leading-tight uppercase">
-                                                    Restricción BBP aplicada: El perfil no califica para bonos estatales según normativa FMV.
-                                                </p>
+                                    <div className="pt-2 mt-2 border-t border-gray-50">
+                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Parámetros Financieros</h4>
+                                        <CustomSelect label="Entidad Financiera" value={formData.ifi_seleccionada} onChange={(val) => handleCustomChange('ifi_seleccionada', val)} options={[{ id: '', label: 'Genérico' }, { id: 'BCP', label: 'BCP' }, { id: 'BBVA', label: 'BBVA' }, { id: 'Interbank', label: 'Interbank' }, { id: 'Pichincha', label: 'Pichincha' }, { id: 'GNB', label: 'GNB' }]} />
+                                        <div className="grid grid-cols-2 gap-3 mt-3">
+                                            <div>
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">TEA (%)</label>
+                                                <input type="number" name="tasa_anual" value={formData.tasa_anual} onChange={handleChange} readOnly={!!formData.ifi_seleccionada} className={`w-full rounded-xl py-1.5 px-3 border border-gray-100 font-bold text-sm ${formData.ifi_seleccionada ? 'bg-gray-100 opacity-60' : 'bg-white'}`} />
                                             </div>
-                                        )}
+                                            <div>
+                                                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1.5">Desgrav. (%)</label>
+                                                <input type="number" name="seguro_desgravamen" value={formData.seguro_desgravamen} onChange={handleChange} readOnly={!!formData.ifi_seleccionada} className={`w-full rounded-xl py-1.5 px-3 border border-gray-100 font-bold text-sm ${formData.ifi_seleccionada ? 'bg-gray-100 opacity-60' : 'bg-white'}`} />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3 mt-3">
+                                            <CustomSelect label="Tipo de Tasa" value={formData.ifi_seleccionada ? '2' : formData.codigo_tipo_tasa} disabled={!!formData.ifi_seleccionada} onChange={(val) => handleCustomChange('codigo_tipo_tasa', val)} options={[{ id: '1', label: 'Nominal' }, { id: '2', label: 'Efectiva' }]} />
+                                            <CustomSelect label="Capitalización" value={formData.capitalizacion} disabled={!!formData.ifi_seleccionada} onChange={(val) => handleCustomChange('capitalizacion', val)} options={[{ id: 'Mensual', label: 'Mensual' }, { id: 'Bimestral', label: 'Bimestral' }, { id: 'Trimestral', label: 'Trimestral' }]} />
+                                        </div>
                                     </div>
                                 </section>
                             </div>
 
-                            {/* ── COLUMNA 3: ENTIDAD FINANCIERA ── */}
+                            {/* ── COLUMNA 3: GASTOS ── */}
                             <div className="space-y-4">
                                 <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
-                                    <div className="w-1 h-3 bg-brand-blue rounded-full"></div>
-                                    Entidad Financiera
+                                    <div className="w-[3px] h-3.5 bg-brand-orange"></div>
+                                    Gastos
                                 </h3>
-                                <section className="space-y-4">
-                                    <CustomSelect label="Banco (IFI)" value={formData.ifi_seleccionada} onChange={(val) => handleCustomChange('ifi_seleccionada', val)} options={[{ id: '', label: 'Cálculo Genérico' }, { id: 'BCP', label: 'BCP' }, { id: 'BBVA', label: 'BBVA' }, { id: 'Interbank', label: 'Interbank' }, { id: 'Pichincha', label: 'Pichincha' }, { id: 'GNB', label: 'GNB' }]} />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">TEA (%)</label>
-                                            <input type="number" name="tasa_anual" value={formData.tasa_anual} onChange={handleChange} readOnly={!!formData.ifi_seleccionada} className={`w-full rounded-xl py-2 px-3 focus:outline-none border border-gray-100 font-bold text-sm ${formData.ifi_seleccionada ? 'bg-gray-100 opacity-60' : 'bg-gray-50/50'}`} />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-black text-gray-400 uppercase mb-2">Desgravamen (%)</label>
-                                            <input type="number" name="seguro_desgravamen" value={formData.seguro_desgravamen} onChange={handleChange} readOnly={!!formData.ifi_seleccionada} className={`w-full rounded-xl py-2 px-3 focus:outline-none border border-gray-100 font-bold text-sm ${formData.ifi_seleccionada ? 'bg-gray-100 opacity-60' : 'bg-gray-50/50'}`} />
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-3 mt-4">
-                                        <CustomSelect label="Tipo de Tasa" value={formData.ifi_seleccionada ? '2' : formData.codigo_tipo_tasa} disabled={!!formData.ifi_seleccionada} onChange={(val) => handleCustomChange('codigo_tipo_tasa', val)} options={[{ id: '1', label: 'Nominal' }, { id: '2', label: 'Efectiva' }]} />
-                                        <CustomSelect label="Capitalización" value={formData.capitalizacion} disabled={!!formData.ifi_seleccionada} onChange={(val) => handleCustomChange('capitalizacion', val)} options={[{ id: 'Mensual', label: 'Mensual' }, { id: 'Bimestral', label: 'Bimestral' }, { id: 'Trimestral', label: 'Trimestral' }]} />
-                                    </div>
-                                </section>
-                            </div>
 
-                            {/* ── COLUMNA 4: DETALLE DE GASTOS ── */}
-                            <div className="space-y-6">
-                                <section className="space-y-6">
-                                    <div className="space-y-3">
-                                        <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
-                                            <div className="w-1 h-3 bg-brand-orange rounded-full"></div>
-                                            Gastos Iniciales
-                                        </h3>
+                                <div className="space-y-3">
+                                    <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Gastos Iniciales</h4>
                                         <div className="grid grid-cols-2 gap-3">
-                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Notaría</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
-                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Registros</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
-                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Tasación</label><input type="number" name="gastos_tasacion" value={formData.gastos_tasacion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
-                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">C. Estudio</label><input type="number" name="comision_estudio" value={formData.comision_estudio} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
-                                            <div className="col-span-2"><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">C. Activación</label><input type="number" name="comision_activacion" value={formData.comision_activacion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
+                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1 text-center">Notaría</label><input type="number" name="gastos_notariales" value={formData.gastos_notariales} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
+                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1 text-center">Registros</label><input type="number" name="gastos_estudio_titulos" value={formData.gastos_estudio_titulos} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
+                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1 text-center">Tasación</label><input type="number" name="gastos_tasacion" value={formData.gastos_tasacion} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
+                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1 text-center">Estudio</label><input type="number" name="comision_estudio" value={formData.comision_estudio} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
+                                            <div className="col-span-2"><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1 text-center">Activación</label><input type="number" name="comision_activacion" value={formData.comision_activacion} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
                                         </div>
                                     </div>
-                                    <div className="space-y-3">
-                                        <h3 className="text-xs font-black text-gray-800 uppercase tracking-widest flex items-center gap-2 mb-4">
-                                            <div className="w-1 h-3 bg-brand-orange/50 rounded-full"></div>
-                                            Gastos Periódicos
-                                        </h3>
-                                        <div className="grid grid-cols-1 gap-2">
-                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Comisión Per.</label><input type="number" name="comision_periodica" value={formData.comision_periodica} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Portes</label><input type="number" name="portes" value={formData.portes} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
-                                                <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">G. Admin</label><input type="number" name="gastos_administracion" value={formData.gastos_administracion} onChange={handleChange} className="w-full bg-gray-50/50 border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
+
+                                    <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 border-b border-gray-100 pb-1">Gastos Periódicos</h4>
+                                        <div className="space-y-3">
+                                            <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Comisión Mensual</label><input type="number" name="comision_periodica" value={formData.comision_periodica} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Portes</label><input type="number" name="portes" value={formData.portes} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
+                                                <div><label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">G. Adm.</label><input type="number" name="gastos_administracion" value={formData.gastos_administracion} onChange={handleChange} className="w-full bg-white border border-gray-100 rounded-lg py-1 px-2 text-[11px] font-bold focus:outline-none" /></div>
                                             </div>
                                         </div>
                                     </div>
-                                </section>
-                                <div className="pt-2">
-                                    {userRole === 'administrador' ? (
-                                        <div className="text-[9px] text-red-500 font-bold bg-red-50 p-3 rounded-xl border border-red-100 text-center uppercase tracking-tighter">Modo Lectura (Admin)</div>
-                                    ) : ((!formData.sin_bono && !formData.vivienda_sostenible && !formData.es_integrador) || formData.es_integrador) && !formData.ifi_seleccionada ? (
-                                        <div className="text-[9px] text-red-500 font-bold mb-2 bg-red-50 p-2 rounded-lg border border-red-100 text-center uppercase tracking-tighter">Debe seleccionar una entidad financiera (IFI) para continuar.</div>
-                                    ) : (
-                                        <button onClick={handleSimulate} disabled={loading} className="w-full bg-brand-orange hover:bg-orange-600 text-white py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-brand-orange/30 transition-all flex items-center justify-center gap-2">
-                                            {loading ? "..." : <>SIMULAR <ArrowForwardIcon sx={{ fontSize: 14 }} /></>}
-                                        </button>
-                                    )}
                                 </div>
                             </div>
                         </div>
+
+                        <div className="pt-6 mt-6 border-t border-gray-50 text-center">
+                            {userRole === 'administrador' ? (
+                                <div className="text-[9px] text-red-500 font-bold bg-red-50 p-3 rounded-xl border border-red-100 uppercase tracking-tighter inline-block px-8">Modo Lectura (Admin)</div>
+                            ) : ((!formData.sin_bono && !formData.vivienda_sostenible && !formData.es_integrador) || formData.es_integrador) && !formData.ifi_seleccionada ? (
+                                <div className="text-[9px] text-red-500 font-bold bg-red-50 p-3 rounded-xl border border-red-100 uppercase tracking-tighter inline-block px-8">Seleccione una IFI para continuar.</div>
+                            ) : (
+                                <div className="flex justify-center">
+                                    <button onClick={handleSimulate} disabled={loading} className="w-full md:w-80 bg-brand-orange hover:bg-orange-600 text-white py-3.5 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-brand-orange/30 transition-all flex items-center justify-center gap-3">
+                                        {loading ? "Calculando..." : <>GENERAR PROYECCIÓN <ArrowForwardIcon sx={{ fontSize: 16 }} /></>}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="xl:col-span-3 bg-[#0F172A] p-3 rounded-2xl text-white shadow-xl self-start sticky top-3">
-                        <div className="space-y-2">
-                            <div className="flex items-center gap-2 border-b border-white/10 pb-4 mb-4">
+                    {/* SIDEPANEL: ANÁLISIS EN VIVO (3 COLUMNAS) */}
+                    <div className="xl:col-span-3 bg-[#0F172A] p-5 rounded-[2rem] text-white shadow-2xl self-start sticky top-6 border border-white/5">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 border-b border-white/10 pb-4">
                                 <div className="w-1.5 h-1.5 rounded-full bg-brand-blue-light animate-pulse"></div>
-                                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-blue-light">Análisis en Vivo</h3>
+                                <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-brand-blue-light">Resumen</h3>
                             </div>
-                            <div className="space-y-2 px-1">
-                                <div className="flex justify-between items-center"><p className="text-[9px] text-white/30 uppercase font-black tracking-widest">Valor Vivienda</p><p className="text-xs font-black">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(selectedUnit?.precio_venta || 0).toLocaleString()}</p></div>
-                                <div className="flex justify-between items-center"><p className="text-[9px] text-white/30 uppercase font-black tracking-widest">(-) Cuota Inicial</p><p className="text-xs font-black text-rose-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => { const p = parseFloat(selectedUnit?.precio_venta || 0); const v = parseFloat(formData.cuota_inicial || 0); return (cuotaType === 'porcentaje' ? (v / 100) * p : v).toLocaleString(); })()}</p></div>
-                                <div className="flex justify-between items-center"><p className="text-[9px] text-white/30 uppercase font-black tracking-widest">(-) Bono BBP</p><p className="text-xs font-black text-emerald-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(formData.bono_bbp).toLocaleString()}</p></div>
-                                <div className="pt-3 border-t border-white/10 flex justify-between items-center">
-                                    <p className="text-[10px] text-brand-blue-light uppercase font-black tracking-[0.2em]">Préstamo Final</p>
-                                    <p className="text-sm font-black text-brand-blue-light">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => {
+
+                            <div className="space-y-3 px-1">
+                                <div className="flex justify-between items-center"><p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">Vivienda</p><p className="text-xs font-black">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(selectedUnit?.precio_venta || 0).toLocaleString()}</p></div>
+                                <div className="flex justify-between items-center"><p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">(-) Inicial</p><p className="text-xs font-black text-rose-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => { const p = parseFloat(selectedUnit?.precio_venta || 0); const v = parseFloat(formData.cuota_inicial || 0); return (cuotaType === 'porcentaje' ? (v / 100) * p : v).toLocaleString(); })()}</p></div>
+                                <div className="flex justify-between items-center"><p className="text-[9px] text-white/30 uppercase font-bold tracking-widest">(-) Bono</p><p className="text-xs font-black text-emerald-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(formData.bono_bbp).toLocaleString()}</p></div>
+
+                                <div className="pt-4 border-t border-white/10 flex justify-between items-end">
+                                    <p className="text-[10px] text-brand-blue-light uppercase font-black tracking-widest leading-none">Préstamo</p>
+                                    <p className="text-lg font-black text-brand-blue-light">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => {
                                         const p = parseFloat(selectedUnit?.precio_venta || 0);
                                         const b = parseFloat(formData.bono_bbp || 0);
                                         const val = parseFloat(formData.cuota_inicial || 0);
@@ -785,73 +783,42 @@ const SimulationPage = () => {
                                         return (p - ini - b + g).toLocaleString(undefined, { minimumFractionDigits: 2 });
                                     })()}</p>
                                 </div>
-                                <div className="flex justify-between items-center pt-1">
-                                    <p className="text-[8px] text-gray-400 uppercase font-black">Ingreso Familiar (IFM)</p>
-                                    <p className="text-[11px] font-black text-white">S/ {userRole === 'asesor' ? parseFloat(prospectIFM || 0).toLocaleString() : (parseFloat(user?.ingreso_mensual || 0) + parseFloat(user?.ingreso_conyuge || 0)).toLocaleString()}</p>
-                                </div>
                             </div>
+
                             {result && (
-                                <div className="pt-3 mt-3 border-t border-white/10 space-y-2 px-1">
-                                    <div className="flex justify-between items-center text-rose-300">
-                                        <p className="text-[8px] uppercase font-black tracking-widest opacity-60">Intereses Totales</p>
+                                <div className="pt-4 mt-4 border-t border-white/10 space-y-2.5 px-1">
+                                    <div className="flex justify-between items-center text-rose-300 opacity-80">
+                                        <p className="text-[8px] uppercase font-bold">Intereses</p>
                                         <p className="text-[10px] font-black">S/ {parseFloat(result.resumen?.total_intereses || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                     </div>
-                                    <div className="flex justify-between items-center text-amber-300">
-                                        <p className="text-[8px] uppercase font-black tracking-widest opacity-60">Comisiones Totales</p>
+                                    <div className="flex justify-between items-center text-amber-300 opacity-80">
+                                        <p className="text-[8px] uppercase font-bold">Comisiones</p>
                                         <p className="text-[10px] font-black">S/ {parseFloat(result.resumen?.total_comisiones_periodicas || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                     </div>
-                                    <div className="flex justify-between items-center text-pink-300">
-                                        <p className="text-[8px] uppercase font-black tracking-widest opacity-60">Portes y Gastos</p>
-                                        <p className="text-[10px] font-black">S/ {parseFloat(result.resumen?.total_portes_gastos_adm || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                                    </div>
-                                    <div className="flex justify-between items-center text-violet-300">
-                                        <p className="text-[8px] uppercase font-black tracking-widest opacity-60">Seguros Totales</p>
-                                        <p className="text-[10px] font-black">S/ {parseFloat(result.resumen?.total_seguro || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                                    </div>
-                                    <div className="pt-2 border-t border-white/5 flex justify-between items-center text-white">
-                                        <p className="text-[9px] uppercase font-black tracking-[0.1em]">Total Pagado</p>
-                                        <p className="text-sm font-black text-brand-blue-light">S/ {parseFloat(result.resumen?.total_pagado || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                    <div className="flex justify-between items-center text-white font-black pt-2 border-t border-white/5">
+                                        <p className="text-[9px] uppercase tracking-widest">Total</p>
+                                        <p className="text-sm text-brand-blue-light">S/ {parseFloat(result.resumen?.total_pagado || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                     </div>
                                 </div>
                             )}
 
-                            <div className="bg-white/5 p-3 rounded-xl border border-white/10 space-y-1.5 mt-2">
-                                <div className="flex justify-between text-[9px] font-bold text-gray-300">
-                                    <span className="uppercase opacity-60">Tasa Mensual (TEM)</span>
-                                    <span className="text-brand-blue-light">{temValue}</span>
+                            <div className="bg-white/5 p-3 rounded-2xl border border-white/5 mt-4">
+                                <div className="flex justify-between text-[9px]">
+                                    <span className="text-gray-400 uppercase font-bold">TEM</span>
+                                    <span className="text-brand-blue-light font-black">{temValue}</span>
                                 </div>
                             </div>
 
-                            {/* Mensaje de error del backend */}
-                            <div className="space-y-2 mt-4">
-                                {serverError ? (
-                                    <div className="bg-rose-500/15 border border-rose-500/30 p-2.5 rounded-lg">
-                                        <div className="flex items-start gap-2">
-                                            <ErrorOutlineIcon className="text-rose-400 shrink-0 mt-0.5" sx={{ fontSize: 14 }} />
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-[9px] font-bold text-rose-300">{serverError.titulo}</p>
-                                                <p className="text-[8px] text-rose-200/80 mt-1 leading-relaxed">{serverError.mensaje}</p>
-                                                <button
-                                                    onClick={() => setServerError(null)}
-                                                    className="mt-2 px-2 py-0.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 rounded text-[8px] font-bold transition-colors"
-                                                >
-                                                    Cerrar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : !selectedUnit && (
-                                    <div className="bg-blue-500/15 border border-blue-500/30 p-2.5 rounded-lg">
-                                        <div className="flex items-center gap-2">
-                                            <InfoOutlinedIcon className="text-blue-400" sx={{ fontSize: 14 }} />
-                                            <p className="text-[9px] font-bold text-blue-300">Seleccione una unidad para simular</p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                            {serverError && (
+                                <div className="bg-rose-500/10 border border-rose-500/20 p-3 rounded-2xl">
+                                    <p className="text-[9px] font-black text-rose-300 uppercase mb-1">{serverError.titulo}</p>
+                                    <p className="text-[8px] text-rose-200/60 leading-tight">{serverError.mensaje}</p>
+                                    <button onClick={() => setServerError(null)} className="mt-2 text-[8px] font-black text-rose-300 uppercase underline">Cerrar</button>
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div >
+                </div>
 
                 {result && (
                     <div id="simulation-result" className="animate-in fade-in slide-in-from-bottom-5 duration-700">
