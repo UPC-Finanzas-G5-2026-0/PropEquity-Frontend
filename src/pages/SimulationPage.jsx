@@ -851,17 +851,17 @@ const SimulationPage = () => {
                         <div className="space-y-4">
                             <div className="flex items-center gap-2 border-b border-white/10 pb-4">
                                 <div className="w-1.5 h-1.5 rounded-full bg-brand-blue-light animate-pulse"></div>
-                                <h3 className="text-sm font-black uppercase tracking-[0.2em] text-brand-blue-light">Resumen</h3>
+                                <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-brand-blue-light">Resumen</h3>
                             </div>
 
                             <div className="space-y-3 px-1">
-                                <div className="flex justify-between items-center"><p className="text-[10px] text-white/30 uppercase font-black tracking-widest">Vivienda</p><p className="text-xs font-black">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(selectedUnit?.precio_venta || 0).toLocaleString()}</p></div>
-                                <div className="flex justify-between items-center"><p className="text-[10px] text-white/30 uppercase font-black tracking-widest">(-) Inicial</p><p className="text-xs font-black text-rose-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => { const p = parseFloat(selectedUnit?.precio_venta || 0); const v = parseFloat(formData.cuota_inicial || 0); return (cuotaType === 'porcentaje' ? (v / 100) * p : v).toLocaleString(); })()}</p></div>
-                                <div className="flex justify-between items-center"><p className="text-[10px] text-white/30 uppercase font-black tracking-widest">(-) Bono</p><p className="text-xs font-black text-emerald-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(formData.bono_bbp).toLocaleString()}</p></div>
+                                <div className="flex justify-between items-center"><p className="text-[10px] text-white/30 uppercase font-bold tracking-widest">Vivienda</p><p className="text-xs font-bold">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(selectedUnit?.precio_venta || 0).toLocaleString()}</p></div>
+                                <div className="flex justify-between items-center"><p className="text-[10px] text-white/30 uppercase font-bold tracking-widest">(-) Inicial</p><p className="text-xs font-bold text-rose-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => { const p = parseFloat(selectedUnit?.precio_venta || 0); const v = parseFloat(formData.cuota_inicial || 0); return (cuotaType === 'porcentaje' ? (v / 100) * p : v).toLocaleString(); })()}</p></div>
+                                <div className="flex justify-between items-center"><p className="text-[10px] text-white/30 uppercase font-bold tracking-widest">(-) Bono</p><p className="text-xs font-bold text-emerald-400">- {selectedUnit?.moneda === 2 ? '$' : 'S/'} {parseFloat(formData.bono_bbp).toLocaleString()}</p></div>
 
                                 <div className="pt-4 border-t border-white/10 flex justify-between items-end">
-                                    <p className="text-[10px] text-brand-blue-light uppercase font-black tracking-widest leading-none">Préstamo</p>
-                                    <p className="text-lg font-black text-brand-blue-light">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => {
+                                    <p className="text-[10px] text-brand-blue-light uppercase font-bold tracking-widest leading-none">Préstamo</p>
+                                    <p className="text-lg font-bold text-brand-blue-light">{selectedUnit?.moneda === 2 ? '$' : 'S/'} {(() => {
                                         const p = parseFloat(selectedUnit?.precio_venta || 0);
                                         const b = parseFloat(formData.bono_bbp || 0);
                                         const val = parseFloat(formData.cuota_inicial || 0);
@@ -877,7 +877,7 @@ const SimulationPage = () => {
                                     <div className="flex items-start gap-2">
                                         <ErrorOutlineIcon className="text-rose-400 shrink-0" sx={{ fontSize: 16 }} />
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-[10px] font-black text-rose-300 uppercase tracking-widest">{serverError.titulo}</p>
+                                            <p className="text-[10px] font-bold text-rose-300 uppercase tracking-widest">{serverError.titulo}</p>
                                             <p className="text-[10px] text-rose-200 mt-1 leading-relaxed">{serverError.mensaje}</p>
                                         </div>
                                     </div>
@@ -895,28 +895,28 @@ const SimulationPage = () => {
                                 return (
                                     <div className="pt-3 mt-3 border-t border-white/10 space-y-2 px-1">
                                         <div className="flex justify-between items-center text-rose-300">
-                                            <p className="text-[10px] uppercase font-black tracking-widest opacity-60">Intereses Totales</p>
-                                            <p className="text-[10px] font-black">S/ {totalIntereses.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                            <p className="text-[10px] uppercase font-bold tracking-widest opacity-60">Intereses Totales</p>
+                                            <p className="text-[10px] font-bold">S/ {totalIntereses.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                         </div>
                                         <div className="flex justify-between items-center text-violet-300 opacity-80">
-                                            <p className="text-[10px] uppercase font-black tracking-widest">Amort. del Capital</p>
-                                            <p className="text-[10px] font-black">S/ {totalAmortizacion.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                            <p className="text-[10px] uppercase font-bold tracking-widest">Amort. del Capital</p>
+                                            <p className="text-[10px] font-bold">S/ {totalAmortizacion.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                         </div>
                                         <div className="flex justify-between items-center text-teal-300 opacity-80">
-                                            <p className="text-[10px] uppercase font-black tracking-widest">Seg. Desgravamen</p>
-                                            <p className="text-[10px] font-black">S/ {totalSeguro.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                            <p className="text-[10px] uppercase font-bold tracking-widest">Seg. Desgravamen</p>
+                                            <p className="text-[10px] font-bold">S/ {totalSeguro.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                         </div>
                                         <div className="flex justify-between items-center text-amber-300 opacity-80">
-                                            <p className="text-[10px] uppercase font-black tracking-widest">Comisiones Periód.</p>
-                                            <p className="text-[10px] font-black">S/ {totalComisiones.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                            <p className="text-[10px] uppercase font-bold tracking-widest">Comisiones Periód.</p>
+                                            <p className="text-[10px] font-bold">S/ {totalComisiones.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                         </div>
                                         <div className="flex justify-between items-center text-gray-300 opacity-80">
-                                            <p className="text-[10px] uppercase font-black tracking-widest">Portes / Gast. Adm.</p>
-                                            <p className="text-[10px] font-black">S/ {totalPortesYAdm.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                            <p className="text-[10px] uppercase font-bold tracking-widest">Portes / Gast. Adm.</p>
+                                            <p className="text-[10px] font-bold">S/ {totalPortesYAdm.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                         </div>
-                                        <div className="flex justify-between items-center text-white font-black pt-2 border-t border-white/5">
+                                        <div className="flex justify-between items-center text-white font-bold pt-2 border-t border-white/5">
                                             <p className="text-[10px] uppercase tracking-widest">Total</p>
-                                            <p className="text-sm text-brand-blue-light font-black">S/ {parseFloat(result.resumen?.total_pagado || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                                            <p className="text-sm text-brand-blue-light font-bold">S/ {parseFloat(result.resumen?.total_pagado || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                                         </div>
                                     </div>
                                 );
