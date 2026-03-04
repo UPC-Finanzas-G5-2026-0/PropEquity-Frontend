@@ -78,7 +78,7 @@ const ClientDashboard = () => {
         }
     };
 
-    // 🚨 Esta función ahora sí se usa en el botón de abajo
+
     const handleExportPDF = async (id) => {
         const result = await exportToPDF(id);
         if (!result.success) {
